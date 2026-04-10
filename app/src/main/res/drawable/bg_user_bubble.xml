@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rounded rectangle shape for the user's blue chat bubble -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#1976D2" />
+    <!-- Rounded corners: flat on the bottom-right (like iMessage style) -->
+    <corners
+        android:bottomLeftRadius="16dp"
+        android:bottomRightRadius="4dp"
+        android:topLeftRadius="16dp"
+        android:topRightRadius="16dp" />
+</shape>

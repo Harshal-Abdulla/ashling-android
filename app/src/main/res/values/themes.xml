@@ -1,0 +1,5 @@
+<resources>
+    <!-- Theme.Material3.DayNight = Material Design 3, works with material:1.12.0 -->
+    <style name="Theme.LocalLLM" parent="Theme.Material3.DayNight.NoActionBar">
+    </style>
+</resources>

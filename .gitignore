@@ -1,0 +1,30 @@
+# Android build output — generated files, never commit these
+build/
+app/build/
+.gradle/
+
+# Local machine settings — specific to YOUR computer, not others
+local.properties
+*.local.properties
+
+# Android Studio IDE files — not needed for the code itself
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Model files — way too large for GitHub (1-2 GB each)
+*.bin
+*.tflite
+*.task
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Claude AI memory files — personal, not for the repo
+.claude/
+
+# Keystore files — these are secret signing keys, NEVER commit
+*.jks
+*.keystore

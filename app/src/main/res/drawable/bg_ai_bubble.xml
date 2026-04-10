@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rounded rectangle shape for the AI's gray chat bubble -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#E8E8E8" />
+    <!-- Flat on the bottom-left to indicate it "came from" the left side -->
+    <corners
+        android:bottomLeftRadius="4dp"
+        android:bottomRightRadius="16dp"
+        android:topLeftRadius="16dp"
+        android:topRightRadius="16dp" />
+</shape>
