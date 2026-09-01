@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -31,6 +32,11 @@ class MainActivity : AppCompatActivity() {
     // SharedPreferences = tiny key-value store that survives app restarts
     // Think of it like a tiny dictionary saved to disk — like Python's shelve module
     private var activeModelFile: String = ""
+
+    // True while the model is producing a response. Closing LlmInference during
+    // generation crashes in native code, and starting a second generation while
+    // one is running is rejected by MediaPipe, so both are gated on this.
+    private var isGenerating = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -105,11 +111,25 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, ModelLibraryActivity::class.java))
         }
 
+        // Send from the keyboard as well as the button.
+        binding.etMessage.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEND) {
+                binding.btnSend.performClick()
+                true
+            } else {
+                false
+            }
+        }
+
         binding.btnSend.setOnClickListener {
             val text = binding.etMessage.text.toString().trim()
             if (text.isEmpty()) return@setOnClickListener
             if (llm == null) {
                 Toast.makeText(this, "Model still loading...", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (isGenerating) {
+                Toast.makeText(this, "Still answering, one moment", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             binding.etMessage.setText("")
@@ -181,32 +201,59 @@ class MainActivity : AppCompatActivity() {
         // This captures the current state of messages on the main thread
         val prompt = buildPrompt()
 
+        // Read the model into a local. Without this, switching models in another
+        // screen could null the field between the check and the call, and llm!!
+        // would throw.
+        val model = llm
+        if (model == null) {
+            finishGeneration(aiIndex, "Model is not loaded.")
+            return
+        }
+
+        isGenerating = true
+
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                var fullResponse = ""
+                val response = StringBuilder()
 
-                llm!!.generateResponseAsync(prompt) { partialToken, isDone ->
-                    fullResponse += partialToken
+                model.generateResponseAsync(prompt) { partialToken, isDone ->
+                    response.append(partialToken)
+                    val soFar = response.toString()
 
-                    lifecycleScope.launch(Dispatchers.Main) {
-                        messages[aiIndex] = ChatMessage(fullResponse, isUser = false)
-                        adapter.notifyItemChanged(aiIndex)
-                        binding.recyclerView.scrollToPosition(messages.lastIndex)
-
-                        if (isDone) {
-                            binding.progressBar.visibility = View.GONE
-                            binding.btnSend.isEnabled = true
+                    // runOnUiThread rather than launching a coroutine per token:
+                    // a long answer is hundreds of tokens, and each launch was a
+                    // fresh coroutine that could also deliver out of order.
+                    runOnUiThread {
+                        if (aiIndex < messages.size) {
+                            messages[aiIndex] = ChatMessage(soFar, isUser = false)
+                            adapter.notifyItemChanged(aiIndex)
+                            binding.recyclerView.scrollToPosition(messages.lastIndex)
                         }
+                        if (isDone) finishGeneration(null, null)
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    messages[aiIndex] = ChatMessage("Error: ${e.message}", isUser = false)
-                    adapter.notifyItemChanged(aiIndex)
-                    binding.progressBar.visibility = View.GONE
-                    binding.btnSend.isEnabled = true
+                    finishGeneration(aiIndex, "Error: ${e.message}")
                 }
             }
+        }
+    }
+
+    /**
+     * Puts the UI back into a usable state.
+     *
+     * Previously the send button was only re-enabled when the model reported
+     * isDone, so any failure that skipped that callback left the app unable to
+     * send anything again until it was restarted.
+     */
+    private fun finishGeneration(errorAtIndex: Int?, errorText: String?) {
+        isGenerating = false
+        binding.progressBar.visibility = View.GONE
+        binding.btnSend.isEnabled = true
+        if (errorAtIndex != null && errorText != null && errorAtIndex < messages.size) {
+            messages[errorAtIndex] = ChatMessage(errorText, isUser = false)
+            adapter.notifyItemChanged(errorAtIndex)
         }
     }
 
@@ -235,7 +282,7 @@ class MainActivity : AppCompatActivity() {
         // Skip the first message if it's the AI welcome message (not a real model response)
         // Then skip the last message which is the blank AI placeholder we just added
         val history = messages
-            .drop(if (messages.first().isUser.not()) 1 else 0)
+            .drop(if (messages.firstOrNull()?.isUser == false) 1 else 0)
             .dropLast(1)
 
         history.forEachIndexed { index, message ->
@@ -266,6 +313,9 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         val newModel = prefs.getString("active_model", "") ?: ""
+        // Swapping the model mid-answer would close it while native code is
+        // still writing into it.
+        if (isGenerating) return
         if (newModel != activeModelFile) {
             activeModelFile = newModel
             llm?.close()
@@ -278,6 +328,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        llm?.close()
+        // close() during generation crashes in native code. isFinishing tells us
+        // this is a real teardown rather than a transient one.
+        if (!isGenerating) {
+            llm?.close()
+            llm = null
+        }
     }
 }

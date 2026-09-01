@@ -1,5 +1,11 @@
 <resources>
-    <!-- Theme.Material3.DayNight = Material Design 3, works with material:1.12.0 -->
-    <style name="Theme.LocalLLM" parent="Theme.Material3.DayNight.NoActionBar">
+    <!--
+        Light, not DayNight. Every layout in this app hardcodes light colours
+        (#F0F0F0 backgrounds, #FFFFFF bars, dark text), so following the system
+        into dark mode only darkened the dialogs and left the rest light, which
+        looked broken rather than themed. Pick one and be consistent until the
+        layouts use theme attributes.
+    -->
+    <style name="Theme.LocalLLM" parent="Theme.Material3.Light.NoActionBar">
     </style>
 </resources>

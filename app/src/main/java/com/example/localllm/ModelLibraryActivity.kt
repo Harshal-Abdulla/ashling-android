@@ -28,18 +28,24 @@ class ModelLibraryActivity : AppCompatActivity() {
 
         // Same edge-to-edge fix as MainActivity: without it the first model in
         // the list sits under the status bar.
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.modelRoot)) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(binding.modelRoot) { _, insets ->
             val bars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-            v.setPadding(0, bars.top, 0, bars.bottom)
+            binding.modelTopBar.setPadding(
+                binding.modelTopBar.paddingLeft, bars.top,
+                binding.modelTopBar.paddingRight, binding.modelTopBar.paddingBottom
+            )
+            binding.rvModels.setPadding(12, 12, 12, bars.bottom + 12)
             insets
         }
 
         prefs = getSharedPreferences("localllm_prefs", MODE_PRIVATE)
 
-        supportActionBar?.title = "Model Library"
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        // The theme is NoActionBar, so supportActionBar is null here and the
+        // old title/home-button calls did nothing at all. The bar is in the
+        // layout instead.
+        binding.btnBack.setOnClickListener { finish() }
 
         setupModelList()
     }

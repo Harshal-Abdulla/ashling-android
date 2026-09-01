@@ -101,7 +101,8 @@
             android:layout_weight="1"
             android:background="@android:color/transparent"
             android:hint="Type a message..."
-            android:inputType="textMultiLine|textCapSentences"
+            android:inputType="textCapSentences"
+            android:imeOptions="actionSend"
             android:maxLines="4"
             android:padding="8dp"
             android:textSize="15sp" />
