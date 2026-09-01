@@ -3,6 +3,8 @@ package com.example.localllm
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +25,16 @@ class ModelLibraryActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityModelLibraryBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Same edge-to-edge fix as MainActivity: without it the first model in
+        // the list sits under the status bar.
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.modelRoot)) { v, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            v.setPadding(0, bars.top, 0, bars.bottom)
+            insets
+        }
 
         prefs = getSharedPreferences("localllm_prefs", MODE_PRIVATE)
 

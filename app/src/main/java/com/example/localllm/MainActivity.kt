@@ -10,6 +10,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.localllm.databinding.ActivityMainBinding
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -83,6 +85,19 @@ class MainActivity : AppCompatActivity() {
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
+        }
+
+        // targetSdk 35 means Android draws this app edge to edge: the system no
+        // longer keeps the status bar clear for us. Without this the top bar sits
+        // underneath the clock and the Models button cannot be tapped at all,
+        // because the touch goes to the system bar instead of the app.
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            binding.topBar.setPadding(0, bars.top, 0, 0)
+            binding.inputBar.setPadding(0, 0, 0, bars.bottom)
+            insets
         }
 
         // Model library button — opens the model picker screen
