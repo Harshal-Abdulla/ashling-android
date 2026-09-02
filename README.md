@@ -8,6 +8,11 @@ server, and it works in aeroplane mode.
 
 <img src="docs/screenshot.png" width="320" alt="Solas running on a Pixel 9 Pro emulator">
 
+There is an iPhone version too:
+[Harshal-Abdulla/solas-ios](https://github.com/Harshal-Abdulla/solas-ios). It
+has no download link, because iOS will not install an app from a website — you
+build it in Xcode and run it on your own device.
+
 ## Download
 
 Grab the APK from the [Releases page](https://github.com/Harshal-Abdulla/local-ai-android/releases).
