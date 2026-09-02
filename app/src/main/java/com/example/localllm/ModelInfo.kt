@@ -86,6 +86,21 @@ object ModelLibrary {
         ),
 
         ModelInfo(
+            displayName = "Phi-4 Mini — Best quality",
+            description = "Microsoft's 3.8B model and the best one here by a distance. Only worth it on a recent flagship — anything less and it will either refuse to load or crawl.",
+            fileName = "phi-4-mini-q8.task",
+            sizeLabel = "~3.8 GB",
+            ramLabel = "8 GB RAM",
+            deviceTag = "Flagship phones only",
+            deviceTagColor = "red",
+            license = "MIT",
+            licenseUrl = "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+            kaggleUrl = "https://huggingface.co/litert-community/Phi-4-mini-instruct",
+            kaggleApiPath = "",
+            directUrl = "https://huggingface.co/litert-community/Phi-4-mini-instruct/resolve/main/Phi-4-mini-instruct_multi-prefill-seq_q8_ekv1280.task"
+        ),
+
+        ModelInfo(
             displayName = "Gemma 2 2B — Recommended",
             description = "Google's latest 2B model. Much smarter than Gemma 1.1. Best balance of speed and quality.",
             fileName = "gemma-2-2b-it-cpu-int4.bin",

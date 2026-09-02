@@ -32,6 +32,7 @@ it working:
 | TinyLlama 1.1B | 1.1 GB | 3 GB RAM |
 | Qwen 2.5 1.5B | 1.5 GB | 4 GB RAM |
 | DeepSeek R1 1.5B | 1.8 GB | 4 GB RAM |
+| Phi-4 Mini 3.8B | 3.8 GB | 8 GB RAM, recent flagship |
 
 The Gemma models are also there, but Google puts those behind Kaggle, so those
 need a free Kaggle account and an API token:
@@ -85,6 +86,11 @@ build is just unsigned rather than broken.
   works but is a patch over the real problem.
 - Only the Gemma models need a Kaggle account now, but that flow is still
   clumsy if you want one.
+- Phi-4 Mini is as large as this can go. The bigger models on Hugging Face ship
+  as .litertlm files, and MediaPipe 0.10.22 only reads .task — that would mean
+  moving to the newer LiteRT-LM runtime.
+- Android only. An APK cannot run on an iPhone, and there is no way around
+  that; it would need writing again in Swift.
 - Generation is slow on older phones. A 2B model is a lot to ask of a mid-range
   device, and the first reply after opening the app is the slowest.
 - No way to delete a downloaded model from inside the app yet. You have to
