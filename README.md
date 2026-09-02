@@ -1,138 +1,88 @@
-# Local AI Chat — Android
+# Solas
 
-A free, open source Android app that runs AI language models entirely on your device.
-No internet connection. No subscription. No data collection. Just AI in your pocket.
+An Android chat app that runs a language model on the phone itself. Once the
+model file is downloaded there is no internet involved — nothing is sent to a
+server, and it works in aeroplane mode.
 
-Built for students and everyday people who need AI but can't afford cloud subscriptions.
+"Solas" is the Irish word for light.
 
----
+<img src="docs/screenshot.png" width="320" alt="Solas running on a Pixel 9 Pro emulator">
+
+## Download
+
+Grab the APK from the [Releases page](https://github.com/Harshal-Abdulla/local-ai-android/releases).
+
+Android will warn you about installing outside the Play Store. That is expected
+for a sideloaded app — you have to allow "install unknown apps" for whatever
+browser or file manager you used.
+
+Needs Android 8.0 or newer.
+
+## Getting a model
+
+The app does not ship with a model, because they are over a gigabyte and the
+licence does not allow redistributing them. You download one from inside the
+app, from the Switch Model screen.
+
+The models are hosted on Kaggle, so you need a free Kaggle account and an API
+token:
+
+1. Sign in at [kaggle.com](https://www.kaggle.com) and go to Settings
+2. Under API, click "Create New Token" — it downloads a `kaggle.json` file
+3. Open that file to get your username and key
+4. Accept the [Gemma terms](https://ai.google.dev/gemma/terms) on the model page
+5. Enter the username and key in the app when it asks
+
+That is a lot of steps for a first run and it is the weakest part of the app.
+It is the way Google distributes these models though.
 
 ## What it does
 
-- Runs Google's Gemma AI models locally on your Android phone
-- Full conversation memory — the AI remembers what you said earlier in the chat
-- Multiple model support — switch between models from inside the app
-- Accuracy warning shown on first launch — honest about AI limitations
-- Works completely offline after the model is downloaded
+- Chat with a Gemma model running locally on the device
+- Answers stream back word by word instead of appearing all at once
+- Remembers the conversation, so follow-up questions work
+- Pick between four Gemma models depending on how much storage and RAM you have
+- Warns you on first launch that a small model gets things wrong
 
-## Why I built this
+## Building it yourself
 
-AI tools like ChatGPT cost $20/month. That's a lot for a student.
-Every phone today has enough power to run a small AI model locally.
-This app makes that possible — free, private, no strings attached.
-
----
-
-## Tech Stack
-
-| Tool | Purpose |
-|---|---|
-| Kotlin | Android app language |
-| MediaPipe Tasks GenAI | On-device AI inference |
-| Gemma 1.1 2B (LiteRT) | AI model |
-| Android ViewBinding | UI |
-| SharedPreferences | Storing active model selection |
-
----
-
-## Models Supported
-
-| Model | Size | License |
-|---|---|---|
-| Gemma 1.1 2B IT CPU int4 | ~1.3 GB | [Gemma Terms of Use](https://ai.google.dev/gemma/terms) |
-| Gemma 2B IT CPU int4 | ~1.4 GB | [Gemma Terms of Use](https://ai.google.dev/gemma/terms) |
-
-> Models are not included in this repo. Download instructions below.
-
----
-
-## How to Run
-
-### Requirements
-- Android Studio (latest)
-- Android phone or emulator — API 26+ (Android 8.0), 4GB+ RAM recommended
-- Mac/Linux/Windows for development
-
-### Setup
-
-1. Clone this repo:
-```bash
+```
 git clone https://github.com/Harshal-Abdulla/local-ai-android.git
 cd local-ai-android
+./gradlew assembleDebug
 ```
 
-2. Open in Android Studio → let Gradle sync finish
+The APK ends up in `app/build/outputs/apk/debug/`.
 
-3. Download a model from Kaggle:
-   - Go to [kaggle.com/models/google/gemma](https://www.kaggle.com/models/google/gemma)
-   - Select **LiteRT** tab → choose `gemma-1.1-2b-it-cpu-int4`
-   - Download and extract the `.tar.gz` file
+You need JDK 21. JDK 25 does not work with this version of the Android Gradle
+plugin, and neither does Gradle 9 — the wrapper pins Gradle 8.13 so that is
+handled for you.
 
-4. Push the model to your device/emulator:
-```bash
-adb push ~/Downloads/gemma-1.1-2b-it-cpu-int4.bin \
-  /sdcard/Android/data/com.example.localllm/files/gemma-1.1-2b-it-cpu-int4.bin
-```
+For a release build you need a `keystore.properties` in the project root
+pointing at your own signing key. It is gitignored, so without it the release
+build is just unsigned rather than broken.
 
-5. Hit **Run ▶** in Android Studio
+## Built with
 
-6. Open the app → tap **Models** → tap **Use This Model**
+| | |
+|---|---|
+| Kotlin | the app |
+| MediaPipe Tasks GenAI 0.10.22 | running the model on-device |
+| Gemma 2 2B (int4) | the default model |
+| View binding, RecyclerView, Material 3 | the UI |
 
----
+## Known problems
 
-## Project Structure
+- The Kaggle sign-in is a rough first-run experience, as above.
+- Generation is slow on older phones. A 2B model is a lot to ask of a mid-range
+  device, and the first reply after opening the app is the slowest.
+- The prompt is built in Gemma's format, so a non-Gemma model loads but answers
+  oddly.
+- No way to delete a downloaded model from inside the app yet. You have to
+  clear the app's storage in Android settings.
 
-```
-app/src/main/
-├── java/com/example/localllm/
-│   ├── MainActivity.kt          # Main chat screen + AI engine
-│   ├── ChatAdapter.kt           # RecyclerView adapter for messages
-│   ├── ChatMessage.kt           # Data class for a single message
-│   ├── ModelInfo.kt             # Model metadata + supported model list
-│   └── ModelLibraryActivity.kt  # Model picker screen
-└── res/
-    ├── layout/
-    │   ├── activity_main.xml         # Chat screen layout
-    │   ├── activity_model_library.xml # Model library layout
-    │   ├── item_user_message.xml     # User chat bubble
-    │   ├── item_ai_message.xml       # AI chat bubble
-    │   └── item_model.xml            # Model card in library
-    └── values/
-        ├── strings.xml   # App text
-        ├── colors.xml    # Color palette
-        └── themes.xml    # App theme
-```
+## Why I built it
 
----
-
-## Roadmap
-
-- [ ] App icon and branding
-- [ ] More models (Phi-3 Mini, TinyLlama)
-- [ ] Settings screen (response length, style)
-- [ ] Export conversation
-- [ ] iOS version (Flutter)
-- [ ] Play Store release
-
----
-
-## Contributing
-
-Pull requests are welcome. If you want to add a new model, improve the UI,
-or fix a bug — open an issue first so we can discuss it.
-
----
-
-## Disclaimer
-
-AI responses can be inaccurate, biased or wrong.
-Do not use this app for medical, legal, financial or safety decisions.
-Always verify important information from trusted sources.
-
----
-
-## Author
-
-Built by [Harshal Abdulla](https://github.com/Harshal-Abdulla)
-
-Grad student in Ireland. Built this because AI should be free for everyone.
+I wanted to learn Kotlin properly, and running a model on-device seemed a more
+interesting way to do that than another to-do list. The privacy side is a real
+benefit too — nothing typed into it leaves the phone.
