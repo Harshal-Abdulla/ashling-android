@@ -1,7 +1,9 @@
 package com.example.localllm
 
 import android.content.Context
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
@@ -42,7 +44,9 @@ object KaggleDownloader {
             // Models with a directUrl come from Hugging Face and need no login,
             // so skip all the Kaggle credential work and just fetch the file.
             if (model.directUrl != null) {
-                return@withContext downloadDirect(model.directUrl, outputFile, tempFile, onProgress)
+                return@withContext downloadDirect(
+                    model.directUrl, outputFile, tempFile, onProgress
+                ) { isActive }
             }
 
             val credentials = Base64.getEncoder()
@@ -222,7 +226,12 @@ object KaggleDownloader {
         url: String,
         outputFile: File,
         tempFile: File,
-        onProgress: (Int) -> Unit
+        onProgress: (Int) -> Unit,
+        // Cancelling a coroutine doesn't interrupt a blocking read, so the loop
+        // has to ask whether it should still be running. Without this, pressing
+        // Cancel left the download going in the background and the file kept
+        // growing.
+        stillWanted: () -> Boolean
     ): Result<File> {
         return try {
             val connection = URL(url).openConnection() as HttpURLConnection
@@ -242,6 +251,10 @@ object KaggleDownloader {
                     var downloaded = 0L
                     var read = input.read(buffer)
                     while (read != -1) {
+                        if (!stillWanted()) {
+                            tempFile.delete()
+                            return Result.failure(CancellationException("Download cancelled"))
+                        }
                         output.write(buffer, 0, read)
                         downloaded += read
                         if (total > 0) onProgress(((downloaded * 100) / total).toInt())

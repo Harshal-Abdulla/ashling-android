@@ -46,7 +46,9 @@ need a free Kaggle account and an API token:
 ## What it does
 
 - Chat with a Gemma model running locally on the device
-- Answers stream back word by word instead of appearing all at once
+- The whole answer appears at once. It used to stream word by word, but the
+  streaming API never reported that it had finished for most of these models,
+  which left the app stuck and unable to send anything else
 - Remembers the conversation, so follow-up questions work
 - Pick between four Gemma models depending on how much storage and RAM you have
 - Warns you on first launch that a small model gets things wrong
@@ -79,6 +81,11 @@ build is just unsigned rather than broken.
 | View binding, RecyclerView, Material 3 | the UI |
 
 ## Known problems
+
+- No word by word streaming. generateResponseAsync looks better but never
+  reported completion for most of these models, so the engine stayed busy and
+  the next message came back with "Previous invocation still processing". The
+  synchronous call always returns, so the app is reliable instead of pretty.
 
 - The prompt is written in Gemma's format. Other models still work, but they
   don't recognise Gemma's end-of-turn token, so they keep writing past their

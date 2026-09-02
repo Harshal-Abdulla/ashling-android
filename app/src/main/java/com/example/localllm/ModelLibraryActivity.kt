@@ -4,6 +4,9 @@ import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -31,8 +34,9 @@ class ModelLibraryActivity : AppCompatActivity() {
     private lateinit var adapter: ModelAdapter
 
     // Tracks the currently downloading model filename (only one at a time)
-    private var activeDownloadFileName: String? = null
-    private var downloadJob: Job? = null
+    // Several downloads can run at once, so each one is tracked by file name
+    // rather than there being a single "the download" that blocks the others.
+    private val downloadJobs = mutableMapOf<String, Job>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +44,25 @@ class ModelLibraryActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = getSharedPreferences("localllm_prefs", MODE_PRIVATE)
+
+        // Same inset handling as the chat screen. Without it this top bar sits
+        // underneath the status bar, which not only looks wrong but eats the
+        // taps — the Back button was drawn but not reachable.
+        ViewCompat.setOnApplyWindowInsetsListener(binding.topBar) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updatePadding(top = bars.top)
+            insets
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(binding.rvModels) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updatePadding(bottom = bars.bottom)
+            insets
+        }
+
+        // There was no way back to the chat except the system gesture, and
+        // that closed the app rather than returning, because this activity was
+        // launched without a parent. finish() drops back to the chat.
+        binding.btnBack.setOnClickListener { finish() }
 
         binding.btnKaggleAccount.setOnClickListener {
             showCredentialsDialog(onSaved = {
@@ -83,11 +106,9 @@ class ModelLibraryActivity : AppCompatActivity() {
     // ── Download flow ──────────────────────────────────────────────────────────
 
     private fun startDownload(model: ModelInfo) {
-        // If another download is already running, block
-        if (activeDownloadFileName != null) {
-            Toast.makeText(this, "A download is already in progress", Toast.LENGTH_SHORT).show()
-            return
-        }
+        // Already downloading this one — nothing to do. Other models can
+        // still be started while this runs.
+        if (downloadJobs.containsKey(model.fileName)) return
 
         // Only the Gemma models live on Kaggle and need a login. The rest come
         // from Hugging Face and download straight away.
@@ -99,28 +120,31 @@ class ModelLibraryActivity : AppCompatActivity() {
             return
         }
 
-        activeDownloadFileName = model.fileName
-        adapter.notifyDataSetChanged()
+        adapter.downloadProgress[model.fileName] = 0
+        notifyModelChanged(model.fileName)
 
-        downloadJob = lifecycleScope.launch {
+        downloadJobs[model.fileName] = lifecycleScope.launch {
             val result = KaggleDownloader.download(
                 context  = this@ModelLibraryActivity,
                 model    = model,
                 username = username,
                 apiKey   = apiKey,
                 onProgress = { progress ->
-                    val index = ModelLibrary.models.indexOfFirst { it.fileName == model.fileName }
-                    if (index != -1) {
+                    // The downloader reports every 64KB, which for a 1GB file
+                    // is thousands of callbacks. Redrawing the row that often
+                    // is what made the Cancel button flicker, so only redraw
+                    // when the whole percentage actually changes.
+                    if (adapter.downloadProgress[model.fileName] != progress) {
                         runOnUiThread {
                             adapter.downloadProgress[model.fileName] = progress
-                            adapter.notifyItemChanged(index)
+                            notifyModelChanged(model.fileName)
                         }
                     }
                 }
             )
 
             // Download finished (success or failure)
-            activeDownloadFileName = null
+            downloadJobs.remove(model.fileName)
             adapter.downloadProgress.remove(model.fileName)
             adapter.notifyDataSetChanged()
 
@@ -144,14 +168,17 @@ class ModelLibraryActivity : AppCompatActivity() {
         }
     }
 
-    private fun cancelDownload() {
-        downloadJob?.cancel()
-        downloadJob = null
-        activeDownloadFileName?.let { fileName ->
-            adapter.downloadProgress.remove(fileName)
-        }
-        activeDownloadFileName = null
-        adapter.notifyDataSetChanged()
+    /** Cancels one download and leaves any others running. */
+    private fun cancelDownload(fileName: String) {
+        downloadJobs.remove(fileName)?.cancel()
+        adapter.downloadProgress.remove(fileName)
+        notifyModelChanged(fileName)
+    }
+
+    /** Redraws one row instead of the whole list. */
+    private fun notifyModelChanged(fileName: String) {
+        val index = ModelLibrary.models.indexOfFirst { it.fileName == fileName }
+        if (index != -1) adapter.notifyItemChanged(index)
     }
 
     // ── Kaggle credentials dialog ──────────────────────────────────────────────
@@ -248,7 +275,7 @@ class ModelLibraryActivity : AppCompatActivity() {
             val model        = models[position]
             val isDownloaded = File(externalFilesDir, model.fileName).exists()
             val isActive     = model.fileName == activeFileName
-            val isDownloading = activeDownloadFileName == model.fileName
+            val isDownloading = adapter.downloadProgress.containsKey(model.fileName)
             val progress     = downloadProgress[model.fileName]
 
             // Static info
@@ -286,7 +313,7 @@ class ModelLibraryActivity : AppCompatActivity() {
                 holder.btnUse.isEnabled    = false
                 holder.btnUse.text         = "Downloading..."
                 holder.btnDownload.text    = "Cancel"
-                holder.btnDownload.setOnClickListener { cancelDownload() }
+                holder.btnDownload.setOnClickListener { cancelDownload(model.fileName) }
                 return
             } else {
                 holder.tvDownloadProgress.visibility   = View.GONE
@@ -318,7 +345,9 @@ class ModelLibraryActivity : AppCompatActivity() {
             }
 
             // Disable download button if a different model is already downloading
-            val anotherDownloading = activeDownloadFileName != null && !isDownloading
+            // Downloads no longer block each other, so nothing is greyed out
+            // just because something else is running.
+            val anotherDownloading = false
             holder.btnDownload.isEnabled = !anotherDownloading
             holder.btnDownload.text = if (isDownloaded) "Re-download" else "Download"
 

@@ -25,8 +25,8 @@ android {
         applicationId = "com.example.localllm"
         minSdk = 26         // Android 8.0 — covers almost all modern phones
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
     }
 
     signingConfigs {

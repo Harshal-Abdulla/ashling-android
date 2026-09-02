@@ -3,6 +3,7 @@ package com.example.localllm
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
@@ -31,6 +32,8 @@ class MainActivity : AppCompatActivity() {
     // True while a reply is streaming back. Stops a second request going out
     // on top of the first one.
     private var isGenerating = false
+
+
 
     // activeModel = whichever model the user last selected in ModelLibraryActivity
     // SharedPreferences = tiny key-value store that survives app restarts
@@ -110,6 +113,10 @@ class MainActivity : AppCompatActivity() {
 
         binding.recyclerView.apply {
             adapter = this@MainActivity.adapter
+            // No change animation. The reply row is rebound many times while
+            // the answer streams in, and the default cross-fade made every
+            // update flash.
+            itemAnimator = null
             layoutManager = LinearLayoutManager(this@MainActivity).also {
                 it.stackFromEnd = true
             }
@@ -217,27 +224,32 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                var fullResponse = ""
-
                 val model = llm
                 if (model == null) {
                     withContext(Dispatchers.Main) { finishGenerating("Model was closed.") }
                     return@launch
                 }
 
-                model.generateResponseAsync(prompt) { partialToken, isDone ->
-                    fullResponse += partialToken
+                // Synchronous, deliberately.
+                //
+                // generateResponseAsync streams token by token, which looks
+                // nicer, but the done flag never arrived for several of these
+                // models. The engine stayed busy, the send button stayed
+                // disabled, and the next message came back with "Previous
+                // invocation still processing". A timer to work around it only
+                // moved the problem — it re-enabled the button while the engine
+                // was still locked.
+                //
+                // This call returns when the answer is finished, so there is no
+                // state to get stuck in. The trade is that words appear all at
+                // once instead of typing themselves out.
+                val reply = model.generateResponse(prompt)
 
-                    // runOnUiThread instead of launching a coroutine here.
-                    // This callback fires once per token, and starting a new
-                    // coroutine every time was a lot of objects for no reason.
-                    runOnUiThread {
-                        messages[aiIndex] = ChatMessage(fullResponse, isUser = false)
-                        adapter.notifyItemChanged(aiIndex)
-                        binding.recyclerView.scrollToPosition(messages.lastIndex)
-
-                        if (isDone) finishGenerating(null)
-                    }
+                withContext(Dispatchers.Main) {
+                    messages[aiIndex] = ChatMessage(reply, isUser = false)
+                    adapter.notifyItemChanged(aiIndex)
+                    keepAtBottomIfAlreadyThere()
+                    finishGenerating(null)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -253,6 +265,7 @@ class MainActivity : AppCompatActivity() {
     // Was repeated in three places before, and one of them forgot to
     // re-enable the send button.
     private fun finishGenerating(error: String?) {
+        if (!isGenerating) return
         isGenerating = false
         binding.progressBar.visibility = View.GONE
         binding.btnSend.isEnabled = true
@@ -279,7 +292,9 @@ class MainActivity : AppCompatActivity() {
         // System instruction — prepended to the first user message.
         // This tells Gemma to use the conversation context rather than
         // falling back to its default "I have no memory" trained response.
-        val systemInstruction = "You are a helpful AI assistant. Answer questions directly and concisely."
+        // Defined in ReplyFormatter so the cleaner can recognise it when a
+        // model echoes it back instead of following it.
+        val systemInstruction = ReplyFormatter.SYSTEM_INSTRUCTION
 
         // Skip the first message if it's the AI welcome message (not a real model response)
         // Then skip the last message which is the blank AI placeholder we just added
@@ -304,6 +319,22 @@ class MainActivity : AppCompatActivity() {
         // End with model turn — this is where Gemma continues writing
         sb.append("<start_of_turn>model\n")
         return sb.toString()
+    }
+
+    /**
+     * Scrolls to the newest message, but only when you were already at the
+     * bottom.
+     *
+     * It used to scroll on every single token, so trying to read back through
+     * a long answer was impossible — the list yanked you to the end again
+     * within a few milliseconds. Now scrolling up leaves you where you put
+     * yourself, and coming back to the bottom resumes following along.
+     */
+    private fun keepAtBottomIfAlreadyThere() {
+        val lm = binding.recyclerView.layoutManager as? LinearLayoutManager ?: return
+        val last = lm.findLastVisibleItemPosition()
+        val nearBottom = last >= messages.lastIndex - 2
+        if (nearBottom) binding.recyclerView.scrollToPosition(messages.lastIndex)
     }
 
     private fun addMessage(msg: ChatMessage) {

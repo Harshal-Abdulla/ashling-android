@@ -35,8 +35,24 @@ object ReplyFormatter {
         "</s>"
     )
 
+    /**
+     * The instruction that gets prepended to the first user message. Small
+     * models often echo it straight back instead of acting on it, so it has to
+     * be recognised here to be removed.
+     */
+    const val SYSTEM_INSTRUCTION =
+        "You are a helpful AI assistant. Answer questions directly and concisely."
+
     fun clean(raw: String): String {
         var text = raw
+
+        // Drop an echoed prompt. A model that continues the text rather than
+        // answering it will repeat the system line, and sometimes the question,
+        // before it gets to the reply.
+        text = text.trimStart()
+        if (text.startsWith(SYSTEM_INSTRUCTION)) {
+            text = text.removePrefix(SYSTEM_INSTRUCTION).trimStart()
+        }
 
         // Stop at whichever end-of-turn marker shows up first.
         //
