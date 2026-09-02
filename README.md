@@ -21,7 +21,10 @@ Android will warn you about installing outside the Play Store. That is expected
 for a sideloaded app — you have to allow "install unknown apps" for whatever
 browser or file manager you used.
 
-Needs Android 8.0 or newer.
+Needs Android 8.0 or newer, on a 64-bit phone. That is anything made since
+about 2015 — the APK only carries arm64 libraries, because shipping the 32-bit
+and x86 ones as well took it from 32MB to 110MB for architectures almost nobody
+runs.
 
 ## Getting a model
 

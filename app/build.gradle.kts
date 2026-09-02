@@ -25,8 +25,19 @@ android {
         applicationId = "com.harshalabdulla.ashling"
         minSdk = 26         // Android 8.0 — covers almost all modern phones
         targetSdk = 35
-        versionCode = 12
-        versionName = "2.1"
+        // MediaPipe ships native libraries for three architectures, which came
+        // to 104MB of the APK. Every Android phone made since about 2015 is
+        // arm64, so the other two were download size nobody used: armeabi-v7a
+        // is 32-bit devices, x86 is essentially just emulators.
+        //
+        // The emulator on an Apple Silicon Mac is arm64 as well, so this does
+        // not get in the way of testing.
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
+
+        versionCode = 13
+        versionName = "2.2"
     }
 
     signingConfigs {
