@@ -28,3 +28,4 @@ Thumbs.db
 # Keystore files — these are secret signing keys, NEVER commit
 *.jks
 *.keystore
+keystore.properties

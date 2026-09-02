@@ -1,8 +1,20 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 // This is the app-level build file — it lists all the libraries we use.
 // Think of it like a Python requirements.txt, but with more config options.
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+}
+
+// Signing details live in keystore.properties, which is gitignored.
+// Without it the release build just isn't signed, so the repo still builds
+// for anyone who clones it.
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties()
+if (keystorePropsFile.exists()) {
+    FileInputStream(keystorePropsFile).use { stream -> keystoreProps.load(stream) }
 }
 
 android {
@@ -17,10 +29,24 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        create("release") {
+            if (keystorePropsFile.exists()) {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (keystorePropsFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
@@ -50,7 +76,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
 
     // This is the key library — Google's on-device AI inference engine.
-    // It handles all the heavy math (matrix multiplications, quantization, GPU/CPU dispatch).
-    // We just call its simple API, like calling a Python function.
     implementation("com.google.mediapipe:tasks-genai:0.10.22")
+
+    // For extracting .tar, .tar.gz, and .zip archives when downloading models
+    implementation("org.apache.commons:commons-compress:1.26.2")
 }
