@@ -28,7 +28,6 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -39,8 +38,7 @@
         <!-- Model library screen — opened when user taps "Models" button -->
         <activity
             android:name=".ModelLibraryActivity"
-            android:exported="false"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" />
+            android:exported="false" />
 
     </application>
 

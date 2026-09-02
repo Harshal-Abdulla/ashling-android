@@ -4,8 +4,6 @@ import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -40,20 +38,6 @@ class ModelLibraryActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityModelLibraryBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        // Same edge-to-edge fix as MainActivity: without it the first model in
-        // the list sits under the status bar.
-        ViewCompat.setOnApplyWindowInsetsListener(binding.modelRoot) { _, insets ->
-            val bars = insets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-            )
-            binding.modelTopBar.setPadding(
-                binding.modelTopBar.paddingLeft, bars.top,
-                binding.modelTopBar.paddingRight, binding.modelTopBar.paddingBottom
-            )
-            binding.rvModels.setPadding(12, 12, 12, bars.bottom + 12)
-            insets
-        }
 
         prefs = getSharedPreferences("localllm_prefs", MODE_PRIVATE)
 

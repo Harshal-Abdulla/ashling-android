@@ -4,15 +4,12 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.View
-import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.localllm.databinding.ActivityMainBinding
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,11 +33,6 @@ class MainActivity : AppCompatActivity() {
     // SharedPreferences = tiny key-value store that survives app restarts
     // Think of it like a tiny dictionary saved to disk — like Python's shelve module
     private var activeModelFile: String = ""
-
-    // True while the model is producing a response. Closing LlmInference during
-    // generation crashes in native code, and starting a second generation while
-    // one is running is rejected by MediaPipe, so both are gated on this.
-    private var isGenerating = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,32 +89,9 @@ class MainActivity : AppCompatActivity() {
                 .show()
         }
 
-        // targetSdk 35 means Android draws this app edge to edge: the system no
-        // longer keeps the status bar clear for us. Without this the top bar sits
-        // underneath the clock and the Models button cannot be tapped at all,
-        // because the touch goes to the system bar instead of the app.
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
-            val bars = insets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-            )
-            binding.topBar.setPadding(0, bars.top, 0, 0)
-            binding.inputBar.setPadding(0, 0, 0, bars.bottom)
-            insets
-        }
-
         // Model library button — opens the model picker screen
         binding.btnModels.setOnClickListener {
             startActivity(Intent(this, ModelLibraryActivity::class.java))
-        }
-
-        // Send from the keyboard as well as the button.
-        binding.etMessage.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_SEND) {
-                binding.btnSend.performClick()
-                true
-            } else {
-                false
-            }
         }
 
         binding.btnSend.setOnClickListener {
@@ -206,20 +175,9 @@ class MainActivity : AppCompatActivity() {
         // This captures the current state of messages on the main thread
         val prompt = buildPrompt()
 
-        // Read the model into a local. Without this, switching models in another
-        // screen could null the field between the check and the call, and llm!!
-        // would throw.
-        val model = llm
-        if (model == null) {
-            finishGeneration(aiIndex, "Model is not loaded.")
-            return
-        }
-
-        isGenerating = true
-
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val response = StringBuilder()
+                var fullResponse = ""
 
                 val model = llm
                 if (model == null) {
@@ -286,7 +244,7 @@ class MainActivity : AppCompatActivity() {
         // Skip the first message if it's the AI welcome message (not a real model response)
         // Then skip the last message which is the blank AI placeholder we just added
         val history = messages
-            .drop(if (messages.firstOrNull()?.isUser == false) 1 else 0)
+            .drop(if (messages.first().isUser.not()) 1 else 0)
             .dropLast(1)
 
         history.forEachIndexed { index, message ->
@@ -317,9 +275,6 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         val newModel = prefs.getString("active_model", "") ?: ""
-        // Swapping the model mid-answer would close it while native code is
-        // still writing into it.
-        if (isGenerating) return
         if (newModel != activeModelFile) {
             activeModelFile = newModel
             llm?.close()
@@ -332,11 +287,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // close() during generation crashes in native code. isFinishing tells us
-        // this is a real teardown rather than a transient one.
-        if (!isGenerating) {
-            llm?.close()
-            llm = null
-        }
+        llm?.close()
     }
 }
