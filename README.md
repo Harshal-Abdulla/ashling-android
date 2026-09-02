@@ -45,6 +45,11 @@ need a free Kaggle account and an API token:
 
 ## What it does
 
+- Chats are saved. Open the Chats panel to switch between them, start a new one
+  or delete one. Everything is stored in the app's own folder on the phone and
+  never leaves it.
+- Reopening the app puts you back in the last chat you were in.
+
 - Chat with a Gemma model running locally on the device
 - The whole answer appears at once. It used to stream word by word, but the
   streaming API never reported that it had finished for most of these models,
@@ -62,6 +67,10 @@ cd local-ai-android
 ```
 
 The APK ends up in `app/build/outputs/apk/debug/`.
+
+Do not keep the project in Desktop or Documents if iCloud Drive is syncing
+them. iCloud makes "file 2.xml" copies inside `app/build`, and the dex step
+fails on the duplicates. Somewhere like `~/Projects` avoids it.
 
 You need JDK 21. JDK 25 does not work with this version of the Android Gradle
 plugin, and neither does Gradle 9 — the wrapper pins Gradle 8.13 so that is

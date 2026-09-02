@@ -33,6 +33,12 @@ class MainActivity : AppCompatActivity() {
     // on top of the first one.
     private var isGenerating = false
 
+    // Saved chats. Kept in memory while the app is open and written to disk
+    // whenever something changes, so nothing is lost if it gets killed.
+    private lateinit var conversations: MutableList<Conversation>
+    private lateinit var current: Conversation
+    private lateinit var chatListAdapter: ChatListAdapter
+
 
 
     // activeModel = whichever model the user last selected in ModelLibraryActivity
@@ -52,6 +58,7 @@ class MainActivity : AppCompatActivity() {
 
         showAccuracyWarningIfFirstLaunch()
         setupChat()
+        setupChatList()
         loadModel()
     }
 
@@ -88,6 +95,90 @@ class MainActivity : AppCompatActivity() {
             }
             insets
         }
+    }
+
+    /**
+     * Loads saved chats and wires up the side panel.
+     *
+     * The most recent chat is reopened on launch, so closing the app and coming
+     * back lands you where you left off rather than on a blank screen.
+     */
+    private fun setupChatList() {
+        conversations = ChatStore.load(this)
+        current = conversations.firstOrNull() ?: ChatStore.newConversation().also {
+            conversations.add(0, it)
+        }
+
+        messages.clear()
+        messages.addAll(current.messages)
+        adapter.notifyDataSetChanged()
+
+        chatListAdapter = ChatListAdapter(
+            conversations,
+            onOpen = { openConversation(it) },
+            onDelete = { deleteConversation(it) }
+        )
+        binding.rvChats.layoutManager = LinearLayoutManager(this)
+        binding.rvChats.adapter = chatListAdapter
+
+        binding.btnChats.setOnClickListener {
+            binding.drawerLayout.openDrawer(binding.drawerPanel)
+        }
+        binding.btnNewChat.setOnClickListener { startNewConversation() }
+    }
+
+    private fun openConversation(chat: Conversation) {
+        saveCurrent()
+        current = chat
+        messages.clear()
+        messages.addAll(chat.messages)
+        adapter.notifyDataSetChanged()
+        binding.recyclerView.scrollToPosition(messages.size - 1)
+        binding.drawerLayout.closeDrawer(binding.drawerPanel)
+    }
+
+    private fun startNewConversation() {
+        saveCurrent()
+        // An unused empty chat is just clutter in the list, so reuse it rather
+        // than stacking up "New chat" rows.
+        val blank = conversations.firstOrNull { it.messages.isEmpty() }
+        current = blank ?: ChatStore.newConversation().also { conversations.add(0, it) }
+        messages.clear()
+        adapter.notifyDataSetChanged()
+        chatListAdapter.notifyDataSetChanged()
+        binding.drawerLayout.closeDrawer(binding.drawerPanel)
+        addWelcomeMessage()
+    }
+
+    private fun deleteConversation(chat: Conversation) {
+        AlertDialog.Builder(this)
+            .setTitle("Delete this chat?")
+            .setMessage(chat.title)
+            .setPositiveButton("Delete") { _, _ ->
+                conversations.remove(chat)
+                if (conversations.isEmpty()) conversations.add(ChatStore.newConversation())
+                if (current == chat) {
+                    current = conversations.first()
+                    messages.clear()
+                    messages.addAll(current.messages)
+                    adapter.notifyDataSetChanged()
+                }
+                chatListAdapter.notifyDataSetChanged()
+                ChatStore.save(this, conversations)
+            }
+            .setNegativeButton("Keep", null)
+            .show()
+    }
+
+    /** Copies what's on screen into the current chat and writes it out. */
+    private fun saveCurrent() {
+        if (!::current.isInitialized) return
+        current.messages.clear()
+        current.messages.addAll(messages)
+        current.updatedAt = System.currentTimeMillis()
+        if (current.title == "New chat") current.title = ChatStore.titleFrom(messages)
+        conversations.sortByDescending { it.updatedAt }
+        ChatStore.save(this, conversations)
     }
 
     // SharedPreferences stores a flag "warning_shown" = true after first launch
@@ -160,7 +251,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadModel() {
         // If no model selected yet, send user to the model library
         if (activeModelFile.isEmpty()) {
-            binding.tvStatus.text = "No model selected.\nTap Switch Model to choose one."
+            binding.tvStatus.text = "No model selected.\nTap Models to choose one."
             binding.tvStatus.visibility = View.VISIBLE
             return
         }
@@ -168,7 +259,7 @@ class MainActivity : AppCompatActivity() {
         val modelFile = File(getExternalFilesDir(null), activeModelFile)
 
         if (!modelFile.exists()) {
-            binding.tvStatus.text = "Model file not found.\nTap Switch Model to download it again."
+            binding.tvStatus.text = "Model file not found.\nTap Models to download it again."
             binding.tvStatus.visibility = View.VISIBLE
             return
         }
@@ -190,13 +281,10 @@ class MainActivity : AppCompatActivity() {
                     llm = model
                     binding.tvStatus.visibility = View.GONE
                     binding.btnSend.isEnabled = true
-                    // Clear old messages and show fresh welcome
-                    messages.clear()
-                    adapter.notifyDataSetChanged()
-                    addMessage(ChatMessage(
-                        "Hi! I'm running locally on your device — no internet needed. Ask me anything!",
-                        isUser = false
-                    ))
+                    // Only greet an empty chat. This used to wipe the messages
+                    // every time the model finished loading, which threw away
+                    // whatever conversation had just been restored.
+                    if (messages.isEmpty()) addWelcomeMessage()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -250,6 +338,10 @@ class MainActivity : AppCompatActivity() {
                     adapter.notifyItemChanged(aiIndex)
                     keepAtBottomIfAlreadyThere()
                     finishGenerating(null)
+                    // Replies are written into the list by index rather than
+                    // through addMessage, so they need saving explicitly.
+                    saveCurrent()
+                    chatListAdapter.notifyDataSetChanged()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -337,8 +429,18 @@ class MainActivity : AppCompatActivity() {
         if (nearBottom) binding.recyclerView.scrollToPosition(messages.lastIndex)
     }
 
+    private fun addWelcomeMessage() {
+        addMessage(
+            ChatMessage(
+                "Hi! I'm running locally on your device — no internet needed. Ask me anything!",
+                isUser = false
+            )
+        )
+    }
+
     private fun addMessage(msg: ChatMessage) {
         messages.add(msg)
+        saveCurrent()
         adapter.notifyItemInserted(messages.lastIndex)
         binding.recyclerView.scrollToPosition(messages.lastIndex)
     }
@@ -353,10 +455,16 @@ class MainActivity : AppCompatActivity() {
             activeModelFile = newModel
             llm?.close()
             llm = null
-            messages.clear()
-            adapter.notifyDataSetChanged()
+            // The conversation stays. Changing which model answers is not a
+            // reason to throw away what was already said.
             loadModel()
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        saveCurrent()
+        if (::chatListAdapter.isInitialized) chatListAdapter.notifyDataSetChanged()
     }
 
     override fun onDestroy() {
