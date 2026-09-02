@@ -30,8 +30,8 @@ object ModelLibrary {
     val models = listOf(
 
         ModelInfo(
-            displayName = "SmolLM 135M — Start here",
-            description = "Tiny model from Hugging Face. Downloads in a minute and runs on any phone. Not very clever, but it works everywhere and needs no account.",
+            displayName = "SmolLM 135M — Smallest",
+            description = "Tiny model from Hugging Face. Downloads in a minute and runs on anything, but at 135M parameters the answers are rough. Good for checking the app works; get Qwen for real use.",
             fileName = "smollm-135m-q8.task",
             sizeLabel = "~160 MB",
             ramLabel = "1 GB RAM",
@@ -62,8 +62,8 @@ object ModelLibrary {
             promptFormat = PromptFormat.ZEPHYR),
 
         ModelInfo(
-            displayName = "Qwen 2.5 1.5B",
-            description = "Alibaba's small model. Handles instructions and code questions better than the two above. No account needed.",
+            displayName = "Qwen 2.5 1.5B — Recommended",
+            description = "Alibaba's small model, and the best balance here. Answers real questions properly rather than the rambling the tiny ones produce. Start with this if your phone can take it.",
             fileName = "qwen2.5-1.5b-q8.task",
             sizeLabel = "~1.5 GB",
             ramLabel = "4 GB RAM",

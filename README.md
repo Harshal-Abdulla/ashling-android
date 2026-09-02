@@ -28,14 +28,15 @@ Needs Android 8.0 or newer.
 The app does not ship with a model — they are too big to put in an APK. You
 pick one on the Switch Model screen and it downloads there.
 
-Four of them need no account at all. Start with SmolLM if you just want to see
-it working:
+Five of them need no account at all. Qwen 2.5 is the one to get — the smaller
+ones answer, but roughly. SmolLM is there for checking the app works on a phone
+that cannot hold anything bigger.
 
 | Model | Size | Needs |
 |---|---|---|
-| SmolLM 135M | 160 MB | any phone |
+| Qwen 2.5 1.5B (recommended) | 1.5 GB | 4 GB RAM |
+| SmolLM 135M | 160 MB | any phone, rough answers |
 | TinyLlama 1.1B | 1.1 GB | 3 GB RAM |
-| Qwen 2.5 1.5B | 1.5 GB | 4 GB RAM |
 | DeepSeek R1 1.5B | 1.8 GB | 4 GB RAM |
 | Phi-4 Mini 3.8B | 3.8 GB | 8 GB RAM, recent flagship |
 

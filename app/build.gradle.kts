@@ -25,8 +25,8 @@ android {
         applicationId = "com.example.localllm"
         minSdk = 26         // Android 8.0 — covers almost all modern phones
         targetSdk = 35
-        versionCode = 8
-        versionName = "1.7"
+        versionCode = 9
+        versionName = "1.8"
     }
 
     signingConfigs {
@@ -77,7 +77,11 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
 
     // This is the key library — Google's on-device AI inference engine.
-    implementation("com.google.mediapipe:tasks-genai:0.10.22")
+    // 0.10.35 rather than 0.10.22. The older one only had Backend.DEFAULT, and
+    // Qwen failed to load on it with "Model signature not supported for this
+    // (legacy CPU) path" — that model needs the newer LiteRT path, which only
+    // exists here. Matches the version the iOS build uses.
+    implementation("com.google.mediapipe:tasks-genai:0.10.35")
 
     // For extracting .tar, .tar.gz, and .zip archives when downloading models
     implementation("org.apache.commons:commons-compress:1.26.2")
