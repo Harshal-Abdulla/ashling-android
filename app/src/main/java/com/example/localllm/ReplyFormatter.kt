@@ -114,6 +114,11 @@ object ReplyFormatter {
         // Horizontal rules.
         text = text.replace(Regex("(?m)^\\s*([-*_]\\s*){3,}$"), "")
 
+        // Some models write the two characters backslash-n instead of an actual
+        // line break, so the reply arrived as one long line with \n scattered
+        // through it. Same for the tab and the escaped quote.
+        text = text.replace("\\n", "\n").replace("\\t", "\t").replace("\\\"", "\"")
+
         // Tidy the whitespace the substitutions leave behind.
         text = text.replace(Regex("[ \\t]+\n"), "\n")
         text = text.replace(Regex("\n{3,}"), "\n\n")
