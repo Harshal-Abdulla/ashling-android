@@ -25,6 +25,10 @@ class MainActivity : AppCompatActivity() {
     private val messages = mutableListOf<ChatMessage>()
     private var llm: LlmInference? = null
 
+    // True while a reply is streaming back. Stops a second request going out
+    // on top of the first one.
+    private var isGenerating = false
+
     // activeModel = whichever model the user last selected in ModelLibraryActivity
     // SharedPreferences = tiny key-value store that survives app restarts
     // Think of it like a tiny dictionary saved to disk — like Python's shelve module
@@ -97,6 +101,10 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Model still loading...", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            if (isGenerating) {
+                Toast.makeText(this, "Still answering, hold on", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             binding.etMessage.setText("")
             sendMessage(text)
         }
@@ -105,7 +113,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadModel() {
         // If no model selected yet, send user to the model library
         if (activeModelFile.isEmpty()) {
-            binding.tvStatus.text = "No model selected.\nTap the Models button to choose one."
+            binding.tvStatus.text = "No model selected.\nTap Switch Model to choose one."
             binding.tvStatus.visibility = View.VISIBLE
             return
         }
@@ -113,7 +121,7 @@ class MainActivity : AppCompatActivity() {
         val modelFile = File(getExternalFilesDir(null), activeModelFile)
 
         if (!modelFile.exists()) {
-            binding.tvStatus.text = "Model file not found.\nTap Models to download one."
+            binding.tvStatus.text = "Model file not found.\nTap Switch Model to download it again."
             binding.tvStatus.visibility = View.VISIBLE
             return
         }
@@ -153,6 +161,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sendMessage(userText: String) {
+        isGenerating = true
         addMessage(ChatMessage(userText, isUser = true))
 
         messages.add(ChatMessage("", isUser = false))
@@ -170,28 +179,45 @@ class MainActivity : AppCompatActivity() {
             try {
                 var fullResponse = ""
 
-                llm!!.generateResponseAsync(prompt) { partialToken, isDone ->
+                val model = llm
+                if (model == null) {
+                    withContext(Dispatchers.Main) { finishGenerating("Model was closed.") }
+                    return@launch
+                }
+
+                model.generateResponseAsync(prompt) { partialToken, isDone ->
                     fullResponse += partialToken
 
-                    lifecycleScope.launch(Dispatchers.Main) {
+                    // runOnUiThread instead of launching a coroutine here.
+                    // This callback fires once per token, and starting a new
+                    // coroutine every time was a lot of objects for no reason.
+                    runOnUiThread {
                         messages[aiIndex] = ChatMessage(fullResponse, isUser = false)
                         adapter.notifyItemChanged(aiIndex)
                         binding.recyclerView.scrollToPosition(messages.lastIndex)
 
-                        if (isDone) {
-                            binding.progressBar.visibility = View.GONE
-                            binding.btnSend.isEnabled = true
-                        }
+                        if (isDone) finishGenerating(null)
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     messages[aiIndex] = ChatMessage("Error: ${e.message}", isUser = false)
                     adapter.notifyItemChanged(aiIndex)
-                    binding.progressBar.visibility = View.GONE
-                    binding.btnSend.isEnabled = true
+                    finishGenerating(null)
                 }
             }
+        }
+    }
+
+    // Puts the UI back to idle after a reply finishes or fails.
+    // Was repeated in three places before, and one of them forgot to
+    // re-enable the send button.
+    private fun finishGenerating(error: String?) {
+        isGenerating = false
+        binding.progressBar.visibility = View.GONE
+        binding.btnSend.isEnabled = true
+        if (error != null) {
+            Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -213,9 +239,7 @@ class MainActivity : AppCompatActivity() {
         // System instruction — prepended to the first user message.
         // This tells Gemma to use the conversation context rather than
         // falling back to its default "I have no memory" trained response.
-        val systemInstruction = "You are a helpful, friendly personal AI assistant. " +
-            "You have access to the full conversation history shown below. " +
-            "Use it to answer questions accurately. If the user told you their name, remember it."
+        val systemInstruction = "You are a helpful AI assistant. Answer questions directly and concisely."
 
         // Skip the first message if it's the AI welcome message (not a real model response)
         // Then skip the last message which is the blank AI placeholder we just added
