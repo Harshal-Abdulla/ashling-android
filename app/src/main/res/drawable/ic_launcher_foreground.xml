@@ -1,20 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Speech bubble with a spark in it. "Solas" is Irish for light, and the
-     app is a chat, so the two ideas together. Adaptive icons crop to a
-     circle on most launchers, so everything stays inside the middle 66dp. -->
+<!-- Light held inside an aperture: the model runs on the phone rather than
+     being sent away. The bare sparkle every AI product uses says nothing about
+     that, and looks like all of them.
+
+     Launchers crop adaptive icons to a circle or squircle, so everything stays
+     inside the middle 66dp of the 108dp canvas. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Bubble outline -->
+    <!-- Faint full ring, so the open ends below read as highlights on a whole
+         shape rather than two loose arcs. -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M34,30h40a10,10 0 0 1 10,10v22a10,10 0 0 1 -10,10h-20l-14,12v-12h-6a10,10 0 0 1 -10,-10v-22a10,10 0 0 1 10,-10z" />
+        android:pathData="M54,27.4a26.6,26.6 0 1,1 0,53.2a26.6,26.6 0 1,1 0,-53.2z"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.16"
+        android:strokeWidth="2.8"
+        android:fillColor="#00000000"/>
 
-    <!-- Spark, knocked out of the bubble -->
+    <!-- Lit arc, top right. -->
     <path
-        android:fillColor="#6750A4"
-        android:pathData="M54,38l4.2,10.8l10.8,4.2l-10.8,4.2l-4.2,10.8l-4.2,-10.8l-10.8,-4.2l10.8,-4.2z" />
+        android:pathData="M54,27.4 A26.6,26.6 0 0 1 80.6,54"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.88"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"/>
+
+    <!-- Dimmer arc, bottom left. -->
+    <path
+        android:pathData="M54,80.6 A26.6,26.6 0 0 1 27.4,54"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.45"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"/>
+
+    <!-- The spark, kept small so the ring stays the dominant shape. -->
+    <path
+        android:pathData="M54,37.6 C55.5,49.2 58.9,52.6 70.5,54 C58.9,55.4 55.5,58.8 54,70.4 C52.5,58.8 49.1,55.4 37.5,54 C49.1,52.6 52.5,49.2 54,37.6 Z"
+        android:fillColor="#FFF6F1FF"/>
 </vector>
