@@ -36,6 +36,16 @@ object ReplyFormatter {
     )
 
     /**
+     * Any special token of the form <|...|>, including the malformed closing
+     * ones like </|user|> that these models sometimes emit.
+     *
+     * Listing them individually was not enough. Every model family uses its own
+     * names — im_start, user, assistant, system — and a new model brings new
+     * ones. Matching the shape catches them all.
+     */
+    private val SPECIAL_TOKEN = Regex("""</?\|[a-zA-Z0-9_]+\|>""")
+
+    /**
      * The instruction that gets prepended to the first user message. Small
      * models often echo it straight back instead of acting on it, so it has to
      * be recognised here to be removed.
@@ -60,13 +70,18 @@ object ReplyFormatter {
         // model opens with a marker instead of ending with one — keep the text
         // and just delete the markers. An awkward answer is still better than
         // an empty bubble.
-        val cut = STOP_MARKERS.mapNotNull { marker ->
+        val markerCuts = STOP_MARKERS.mapNotNull { marker ->
             text.indexOf(marker).takeIf { it >= 0 }
-        }.minOrNull()
+        }
+        val specialCut = SPECIAL_TOKEN.find(text)?.range?.first
+        val cut = (markerCuts + listOfNotNull(specialCut)).minOrNull()
         text = if (cut != null && text.substring(0, cut).isNotBlank()) {
             text.substring(0, cut)
         } else {
-            STOP_MARKERS.fold(text) { acc, marker -> acc.replace(marker, "") }
+            SPECIAL_TOKEN.replace(
+                STOP_MARKERS.fold(text) { acc, marker -> acc.replace(marker, "") },
+                ""
+            )
         }
 
         // Reasoning models think out loud first. Drop it — including the case

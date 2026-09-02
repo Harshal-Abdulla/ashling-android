@@ -96,6 +96,11 @@ build is just unsigned rather than broken.
 
 ## Known problems
 
+- Only the last ten messages are sent to the model. These have small context
+  windows, and a long chat pushed the actual question out of view — asking
+  something in a fresh chat gave a sensible answer while the same question
+  after a dozen turns just got the earlier rambling back.
+
 - No word by word streaming. generateResponseAsync looks better but never
   reported completion for most of these models, so the engine stayed busy and
   the next message came back with "Previous invocation still processing". The

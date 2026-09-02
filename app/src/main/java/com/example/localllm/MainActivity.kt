@@ -390,9 +390,22 @@ class MainActivity : AppCompatActivity() {
 
         // Skip the first message if it's the AI welcome message (not a real model response)
         // Then skip the last message which is the blank AI placeholder we just added
+        // Only the recent turns go into the prompt.
+        //
+        // These models have a small context window, and a long chat fills it
+        // with old text that pushes the actual question to the edge. Asking
+        // "what colour is the sky" in a fresh chat gets "the sky is blue";
+        // asking it after a dozen turns of a small model rambling gets the
+        // rambling back, because that is most of what it can see.
+        //
+        // Ten messages is roughly five exchanges, which is enough for
+        // follow-up questions to still make sense.
+        val maxHistory = 10
+
         val history = messages
             .drop(if (messages.first().isUser.not()) 1 else 0)
             .dropLast(1)
+            .takeLast(maxHistory)
 
         history.forEachIndexed { index, message ->
             if (message.isUser) {
