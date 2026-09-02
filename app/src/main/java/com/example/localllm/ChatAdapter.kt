@@ -49,7 +49,10 @@ class ChatAdapter(private val messages: List<ChatMessage>) :
     // Called when a bubble is being shown — fill it with the actual message text
     // This is like binding data to a template in Python's Jinja2
     override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
-        holder.tvMessage.text = messages[position].text
+        val message = messages[position]
+        // Only the model writes markdown, so leave what the user typed alone.
+        holder.tvMessage.text =
+            if (message.isUser) message.text else ReplyFormatter.clean(message.text)
     }
 
     // Total number of messages — like len(messages) in Python

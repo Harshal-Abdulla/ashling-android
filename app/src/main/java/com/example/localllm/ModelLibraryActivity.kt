@@ -89,11 +89,12 @@ class ModelLibraryActivity : AppCompatActivity() {
             return
         }
 
-        // Get saved Kaggle credentials, or prompt user to enter them
+        // Only the Gemma models live on Kaggle and need a login. The rest come
+        // from Hugging Face and download straight away.
         val username = prefs.getString("kaggle_username", "") ?: ""
         val apiKey   = prefs.getString("kaggle_api_key",  "") ?: ""
 
-        if (username.isEmpty() || apiKey.isEmpty()) {
+        if (model.needsKaggle && (username.isEmpty() || apiKey.isEmpty())) {
             showCredentialsDialog(onSaved = { startDownload(model) })
             return
         }

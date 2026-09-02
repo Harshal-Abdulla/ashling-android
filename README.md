@@ -20,21 +20,27 @@ Needs Android 8.0 or newer.
 
 ## Getting a model
 
-The app does not ship with a model, because they are over a gigabyte and the
-licence does not allow redistributing them. You download one from inside the
-app, from the Switch Model screen.
+The app does not ship with a model — they are too big to put in an APK. You
+pick one on the Switch Model screen and it downloads there.
 
-The models are hosted on Kaggle, so you need a free Kaggle account and an API
-token:
+Four of them need no account at all. Start with SmolLM if you just want to see
+it working:
+
+| Model | Size | Needs |
+|---|---|---|
+| SmolLM 135M | 160 MB | any phone |
+| TinyLlama 1.1B | 1.1 GB | 3 GB RAM |
+| Qwen 2.5 1.5B | 1.5 GB | 4 GB RAM |
+| DeepSeek R1 1.5B | 1.8 GB | 4 GB RAM |
+
+The Gemma models are also there, but Google puts those behind Kaggle, so those
+need a free Kaggle account and an API token:
 
 1. Sign in at [kaggle.com](https://www.kaggle.com) and go to Settings
 2. Under API, click "Create New Token" — it downloads a `kaggle.json` file
 3. Open that file to get your username and key
 4. Accept the [Gemma terms](https://ai.google.dev/gemma/terms) on the model page
-5. Enter the username and key in the app when it asks
-
-That is a lot of steps for a first run and it is the weakest part of the app.
-It is the way Google distributes these models though.
+5. Enter them in the app when it asks
 
 ## What it does
 
@@ -73,11 +79,14 @@ build is just unsigned rather than broken.
 
 ## Known problems
 
-- The Kaggle sign-in is a rough first-run experience, as above.
+- The prompt is written in Gemma's format. Other models still work, but they
+  don't recognise Gemma's end-of-turn token, so they keep writing past their
+  answer. The reply gets trimmed at the first stop token to hide that, which
+  works but is a patch over the real problem.
+- Only the Gemma models need a Kaggle account now, but that flow is still
+  clumsy if you want one.
 - Generation is slow on older phones. A 2B model is a lot to ask of a mid-range
   device, and the first reply after opening the app is the slowest.
-- The prompt is built in Gemma's format, so a non-Gemma model loads but answers
-  oddly.
 - No way to delete a downloaded model from inside the app yet. You have to
   clear the app's storage in Android settings.
 

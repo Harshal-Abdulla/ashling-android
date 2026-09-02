@@ -3,6 +3,9 @@ package com.example.localllm
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -39,12 +42,49 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        applyWindowInsets()
+
         prefs = getSharedPreferences("localllm_prefs", MODE_PRIVATE)
         activeModelFile = prefs.getString("active_model", "") ?: ""
 
         showAccuracyWarningIfFirstLaunch()
         setupChat()
         loadModel()
+    }
+
+    /**
+     * Keeps the top bar under the status bar and the input row above the
+     * keyboard.
+     *
+     * Phones differ a lot here — notches, punch holes, gesture bars, and on
+     * some phones a bottom bar that is there and on others one that isn't.
+     * Hard-coded padding that looks right on one device is wrong on the next,
+     * so the system tells us the sizes and we use those.
+     *
+     * The keyboard counts as an inset too, which is what stops the text box
+     * ending up behind it while you are typing.
+     */
+    private fun applyWindowInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.topBar) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updatePadding(top = bars.top)
+            insets
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.inputBar) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            // Whichever is taller: the keyboard when it is open, the gesture
+            // bar when it is not.
+            view.updatePadding(bottom = maxOf(bars.bottom, ime.bottom))
+
+            // Follow the messages down as the keyboard opens, otherwise you end
+            // up typing at a view of the middle of the conversation.
+            if (messages.isNotEmpty()) {
+                binding.recyclerView.scrollToPosition(messages.lastIndex)
+            }
+            insets
+        }
     }
 
     // SharedPreferences stores a flag "warning_shown" = true after first launch
@@ -254,7 +294,10 @@ class MainActivity : AppCompatActivity() {
                               else message.text
                 sb.append("<start_of_turn>user\n$content<end_of_turn>\n")
             } else if (message.text.isNotEmpty()) {
-                sb.append("<start_of_turn>model\n${message.text}<end_of_turn>\n")
+                // Cleaned, so a reasoning model does not re-read its own
+                // <think> block as if it were part of the conversation.
+                val reply = ReplyFormatter.clean(message.text)
+                sb.append("<start_of_turn>model\n$reply<end_of_turn>\n")
             }
         }
 

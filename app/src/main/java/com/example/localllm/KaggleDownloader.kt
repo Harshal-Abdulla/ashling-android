@@ -39,7 +39,13 @@ object KaggleDownloader {
         val tempFile   = File(outputDir, "${model.fileName}.download.tmp")
 
         try {
-                val credentials = Base64.getEncoder()
+            // Models with a directUrl come from Hugging Face and need no login,
+            // so skip all the Kaggle credential work and just fetch the file.
+            if (model.directUrl != null) {
+                return@withContext downloadDirect(model.directUrl, outputFile, tempFile, onProgress)
+            }
+
+            val credentials = Base64.getEncoder()
                 .encodeToString("$username:$apiKey".toByteArray())
 
             // Try multiple URL formats — Kaggle's API path can vary by framework casing/version
@@ -205,5 +211,51 @@ object KaggleDownloader {
             }
         }
         throw Exception("No .bin file found inside the downloaded archive")
+    }
+
+    /**
+     * Straight download, no authentication. Writes to a .tmp file first and
+     * only renames it when the whole thing has arrived, so a download that
+     * dies halfway through doesn't leave a broken file that looks complete.
+     */
+    private fun downloadDirect(
+        url: String,
+        outputFile: File,
+        tempFile: File,
+        onProgress: (Int) -> Unit
+    ): Result<File> {
+        return try {
+            val connection = URL(url).openConnection() as HttpURLConnection
+            connection.instanceFollowRedirects = true
+            connection.connectTimeout = 30000
+            connection.readTimeout = 60000
+            connection.connect()
+
+            if (connection.responseCode !in 200..299) {
+                return Result.failure(Exception("Download failed (HTTP ${connection.responseCode})"))
+            }
+
+            val total = connection.contentLengthLong
+            connection.inputStream.use { input ->
+                tempFile.outputStream().use { output ->
+                    val buffer = ByteArray(64 * 1024)
+                    var downloaded = 0L
+                    var read = input.read(buffer)
+                    while (read != -1) {
+                        output.write(buffer, 0, read)
+                        downloaded += read
+                        if (total > 0) onProgress(((downloaded * 100) / total).toInt())
+                        read = input.read(buffer)
+                    }
+                }
+            }
+
+            if (outputFile.exists()) outputFile.delete()
+            tempFile.renameTo(outputFile)
+            Result.success(outputFile)
+        } catch (e: Exception) {
+            tempFile.delete()
+            Result.failure(e)
+        }
     }
 }
