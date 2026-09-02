@@ -17,7 +17,11 @@ data class ModelInfo(
     // If this is set the model downloads straight from the URL with no login.
     // Only the Gemma ones need a Kaggle account, because that is where Google
     // puts them.
-    val directUrl: String? = null
+    val directUrl: String? = null,
+
+    // Which chat template this model was trained with. Getting this wrong is
+    // what made replies ramble instead of answering.
+    val promptFormat: PromptFormat = PromptFormat.GEMMA
 ) {
     val needsKaggle: Boolean get() = directUrl == null
 }
@@ -38,7 +42,8 @@ object ModelLibrary {
             kaggleUrl = "https://huggingface.co/litert-community/SmolLM-135M-Instruct",
             kaggleApiPath = "",
             directUrl = "https://huggingface.co/litert-community/SmolLM-135M-Instruct/resolve/main/SmolLM-135M-Instruct_multi-prefill-seq_q8_ekv1280.task"
-        ),
+        ,
+            promptFormat = PromptFormat.CHATML),
 
         ModelInfo(
             displayName = "TinyLlama 1.1B",
@@ -53,7 +58,8 @@ object ModelLibrary {
             kaggleUrl = "https://huggingface.co/litert-community/TinyLlama-1.1B-Chat-v1.0",
             kaggleApiPath = "",
             directUrl = "https://huggingface.co/litert-community/TinyLlama-1.1B-Chat-v1.0/resolve/main/TinyLlama-1.1B-Chat-v1.0_multi-prefill-seq_q8_ekv1280.task"
-        ),
+        ,
+            promptFormat = PromptFormat.ZEPHYR),
 
         ModelInfo(
             displayName = "Qwen 2.5 1.5B",
@@ -68,7 +74,8 @@ object ModelLibrary {
             kaggleUrl = "https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct",
             kaggleApiPath = "",
             directUrl = "https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct/resolve/main/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv1280.task"
-        ),
+        ,
+            promptFormat = PromptFormat.CHATML),
 
         ModelInfo(
             displayName = "DeepSeek R1 1.5B",
@@ -83,7 +90,8 @@ object ModelLibrary {
             kaggleUrl = "https://huggingface.co/litert-community/DeepSeek-R1-Distill-Qwen-1.5B",
             kaggleApiPath = "",
             directUrl = "https://huggingface.co/litert-community/DeepSeek-R1-Distill-Qwen-1.5B/resolve/main/deepseek_q8_ekv1280.task"
-        ),
+        ,
+            promptFormat = PromptFormat.CHATML),
 
         ModelInfo(
             displayName = "Phi-4 Mini — Best quality",
@@ -98,7 +106,8 @@ object ModelLibrary {
             kaggleUrl = "https://huggingface.co/litert-community/Phi-4-mini-instruct",
             kaggleApiPath = "",
             directUrl = "https://huggingface.co/litert-community/Phi-4-mini-instruct/resolve/main/Phi-4-mini-instruct_multi-prefill-seq_q8_ekv1280.task"
-        ),
+        ,
+            promptFormat = PromptFormat.PHI),
 
         ModelInfo(
             displayName = "Gemma 2 2B — Recommended",

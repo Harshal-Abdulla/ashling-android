@@ -333,8 +333,13 @@ class MainActivity : AppCompatActivity() {
                 // once instead of typing themselves out.
                 val reply = model.generateResponse(prompt)
 
+                // Store it already cleaned. The saved history is what gets fed
+                // back into the next prompt, and it is also what you read if
+                // you ever open the JSON file.
+                val cleaned = ReplyFormatter.clean(reply)
+
                 withContext(Dispatchers.Main) {
-                    messages[aiIndex] = ChatMessage(reply, isUser = false)
+                    messages[aiIndex] = ChatMessage(cleaned, isUser = false)
                     adapter.notifyItemChanged(aiIndex)
                     keepAtBottomIfAlreadyThere()
                     finishGenerating(null)
@@ -378,68 +383,45 @@ class MainActivity : AppCompatActivity() {
     // What did I just ask?<end_of_turn>
     // <start_of_turn>model
     //
+    /**
+     * Builds the prompt using the template the active model was trained with.
+     *
+     * This used to always write Gemma's format. Every other model then failed
+     * to recognise the structure and simply continued the text instead of
+     * answering — echoing the instruction back, inventing its own follow-up
+     * questions, and rambling. That was the cause of the gibberish, not the
+     * formatting of the reply afterwards.
+     */
     private fun buildPrompt(): String {
-        val sb = StringBuilder()
-
-        // System instruction — prepended to the first user message.
-        // This tells Gemma to use the conversation context rather than
-        // falling back to its default "I have no memory" trained response.
-        // Defined in ReplyFormatter so the cleaner can recognise it when a
-        // model echoes it back instead of following it.
-        val systemInstruction = ReplyFormatter.SYSTEM_INSTRUCTION
-
-        // Skip the first message if it's the AI welcome message (not a real model response)
-        // Then skip the last message which is the blank AI placeholder we just added
-        // Only the recent turns go into the prompt.
-        //
-        // These models have a small context window, and a long chat fills it
-        // with old text that pushes the actual question to the edge. Asking
-        // "what colour is the sky" in a fresh chat gets "the sky is blue";
-        // asking it after a dozen turns of a small model rambling gets the
-        // rambling back, because that is most of what it can see.
-        //
-        // Ten messages is roughly five exchanges, which is enough for
-        // follow-up questions to still make sense.
+        // Only recent turns. These have small context windows and a long chat
+        // pushes the actual question out of view.
         val maxHistory = 10
 
         val history = messages
             .drop(if (messages.first().isUser.not()) 1 else 0)
             .dropLast(1)
             .takeLast(maxHistory)
+            .map { if (it.isUser) it else ChatMessage(ReplyFormatter.clean(it.text), false) }
 
-        history.forEachIndexed { index, message ->
-            if (message.isUser) {
-                // Prepend system instruction to the very first user message only
-                val content = if (index == 0) "$systemInstruction\n\n${message.text}"
-                              else message.text
-                sb.append("<start_of_turn>user\n$content<end_of_turn>\n")
-            } else if (message.text.isNotEmpty()) {
-                // Cleaned, so a reasoning model does not re-read its own
-                // <think> block as if it were part of the conversation.
-                val reply = ReplyFormatter.clean(message.text)
-                sb.append("<start_of_turn>model\n$reply<end_of_turn>\n")
-            }
-        }
+        val format = ModelLibrary.models
+            .firstOrNull { it.fileName == activeModelFile }
+            ?.promptFormat
+            ?: PromptFormat.GEMMA
 
-        // End with model turn — this is where Gemma continues writing
-        sb.append("<start_of_turn>model\n")
-        return sb.toString()
+        return format.build(history, ReplyFormatter.SYSTEM_INSTRUCTION)
     }
 
     /**
      * Scrolls to the newest message, but only when you were already at the
-     * bottom.
-     *
-     * It used to scroll on every single token, so trying to read back through
-     * a long answer was impossible — the list yanked you to the end again
-     * within a few milliseconds. Now scrolling up leaves you where you put
-     * yourself, and coming back to the bottom resumes following along.
+     * bottom — otherwise reading back through a long answer is impossible,
+     * because the list yanks you to the end again.
      */
     private fun keepAtBottomIfAlreadyThere() {
         val lm = binding.recyclerView.layoutManager as? LinearLayoutManager ?: return
         val last = lm.findLastVisibleItemPosition()
-        val nearBottom = last >= messages.lastIndex - 2
-        if (nearBottom) binding.recyclerView.scrollToPosition(messages.lastIndex)
+        if (last >= messages.lastIndex - 2) {
+            binding.recyclerView.scrollToPosition(messages.lastIndex)
+        }
     }
 
     private fun addWelcomeMessage() {

@@ -106,10 +106,6 @@ build is just unsigned rather than broken.
   the next message came back with "Previous invocation still processing". The
   synchronous call always returns, so the app is reliable instead of pretty.
 
-- The prompt is written in Gemma's format. Other models still work, but they
-  don't recognise Gemma's end-of-turn token, so they keep writing past their
-  answer. The reply gets trimmed at the first stop token to hide that, which
-  works but is a patch over the real problem.
 - Only the Gemma models need a Kaggle account now, but that flow is still
   clumsy if you want one.
 - Phi-4 Mini is as large as this can go. The bigger models on Hugging Face ship
