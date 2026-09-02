@@ -15,7 +15,7 @@
         android:layout_gravity="start"
         android:background="@drawable/bg_ai_bubble"
         android:padding="12dp"
-        android:textColor="#1A1A1A"
+        android:textColor="@color/text"
         android:textSize="15sp" />
 
 </FrameLayout>

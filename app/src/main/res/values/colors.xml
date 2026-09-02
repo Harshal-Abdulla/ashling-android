@@ -1,5 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  One palette, taken from the app icon.
+
+  Colours used to be written straight into the layouts, which is how the chat
+  ended up with blue message bubbles sitting next to purple buttons. Naming
+  them by role rather than by shade means a change happens in one place and the
+  screen stays consistent.
+-->
 <resources>
+    <!-- Brand -->
+    <color name="brand">#5A3FBE</color>
+    <color name="brand_dark">#3C2A86</color>
+    <color name="brand_light">#7C5CF0</color>
+    <color name="brand_tint">#EFEAFF</color>
+
+    <!-- Surfaces -->
+    <color name="bg">#F6F4FB</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_sunken">#EFEDF5</color>
+    <color name="divider">#E4E0EE</color>
+
+    <!-- Text -->
+    <color name="text">#1B1730</color>
+    <color name="text_muted">#6B6684</color>
+    <color name="on_brand">#FFFFFF</color>
+
+    <!-- Message bubbles -->
+    <color name="bubble_user">#5A3FBE</color>
+    <color name="bubble_ai">#FFFFFF</color>
+
+    <!-- Notices -->
+    <color name="notice_bg">#FFF4E0</color>
+    <color name="notice_text">#6B4E16</color>
+
+    <!-- Kept because the generated theme still refers to them. -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>

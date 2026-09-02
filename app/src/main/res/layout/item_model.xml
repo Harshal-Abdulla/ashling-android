@@ -3,7 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#FFFFFF"
+    android:background="@color/surface"
     android:orientation="vertical"
     android:padding="16dp"
     android:layout_marginBottom="12dp"
@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"
         android:textSize="17sp"
         android:textStyle="bold"
-        android:textColor="#1A1A1A" />
+        android:textColor="@color/text" />
 
     <!-- Short description -->
     <TextView
@@ -25,7 +25,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:textSize="13sp"
-        android:textColor="#555555" />
+        android:textColor="@color/text_muted" />
 
     <!-- Storage / RAM / device tag chips -->
     <LinearLayout
@@ -38,7 +38,7 @@
             android:id="@+id/tvModelSize"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="#F0F0F0"
+            android:background="@color/bg"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
             android:paddingTop="3dp"
@@ -51,7 +51,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
-            android:background="#F0F0F0"
+            android:background="@color/bg"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
             android:paddingTop="3dp"
@@ -70,7 +70,7 @@
             android:paddingBottom="3dp"
             android:textSize="12sp"
             android:textStyle="bold"
-            android:textColor="#FFFFFF" />
+            android:textColor="@color/surface" />
 
     </LinearLayout>
 
@@ -81,7 +81,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:textSize="12sp"
-        android:textColor="#1976D2"
+        android:textColor="@color/brand"
         android:clickable="true"
         android:focusable="true" />
 
@@ -102,7 +102,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:textSize="13sp"
-        android:textColor="#1976D2"
+        android:textColor="@color/brand"
         android:visibility="gone" />
 
     <ProgressBar
