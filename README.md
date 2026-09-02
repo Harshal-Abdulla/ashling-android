@@ -1,21 +1,21 @@
-# Solas
+# Ashling
 
 An Android chat app that runs a language model on the phone itself. Once the
 model file is downloaded there is no internet involved — nothing is sent to a
 server, and it works in aeroplane mode.
 
-"Solas" is the Irish word for light.
+"Ashling" is the Irish word for light.
 
-<img src="docs/screenshot.png" width="320" alt="Solas running on a Pixel 9 Pro emulator">
+<img src="docs/screenshot.png" width="320" alt="Ashling running on a Pixel 9 Pro emulator">
 
 There is an iPhone version too:
-[Harshal-Abdulla/solas-ios](https://github.com/Harshal-Abdulla/solas-ios). It
+[Harshal-Abdulla/ashling-ios](https://github.com/Harshal-Abdulla/ashling-ios). It
 has no download link, because iOS will not install an app from a website — you
 build it in Xcode and run it on your own device.
 
 ## Download
 
-Grab the APK from the [Releases page](https://github.com/Harshal-Abdulla/local-ai-android/releases).
+Grab the APK from the [Releases page](https://github.com/Harshal-Abdulla/ashling-android/releases).
 
 Android will warn you about installing outside the Play Store. That is expected
 for a sideloaded app — you have to allow "install unknown apps" for whatever
@@ -67,7 +67,7 @@ need a free Kaggle account and an API token:
 ## Building it yourself
 
 ```
-git clone https://github.com/Harshal-Abdulla/local-ai-android.git
+git clone https://github.com/Harshal-Abdulla/ashling-android.git
 cd local-ai-android
 ./gradlew assembleDebug
 ```

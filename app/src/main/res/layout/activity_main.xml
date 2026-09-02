@@ -137,7 +137,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@drawable/bg_input_field"
-                android:hint="Message Solas"
+                android:hint="Message Ashling"
                 android:importantForAutofill="no"
                 android:inputType="textMultiLine|textCapSentences"
                 android:maxLines="5"

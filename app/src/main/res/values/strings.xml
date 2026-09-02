@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">Solas</string>
+    <string name="app_name">Ashling</string>
     <string name="app_tagline">Your personal AI. Free. Private. Always.</string>
     <string name="accuracy_warning_title">Before you start</string>
-    <string name="accuracy_warning_message">Solas runs AI entirely on your device — no internet, no data collection, no cost.\n\nHowever, AI can be inaccurate, biased or wrong. Do not use for medical, legal or financial decisions. Always verify important information.</string>
-    <string name="ai_disclaimer">Solas runs a small model on your phone and can get things wrong. Check anything important.</string>
+    <string name="accuracy_warning_message">Ashling runs AI entirely on your device — no internet, no data collection, no cost.\n\nHowever, AI can be inaccurate, biased or wrong. Do not use for medical, legal or financial decisions. Always verify important information.</string>
+    <string name="ai_disclaimer">Ashling runs a small model on your phone and can get things wrong. Check anything important.</string>
 </resources>

@@ -22,11 +22,11 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.localllm"
+        applicationId = "com.harshalabdulla.ashling"
         minSdk = 26         // Android 8.0 — covers almost all modern phones
         targetSdk = 35
-        versionCode = 11
-        versionName = "2.0"
+        versionCode = 12
+        versionName = "2.1"
     }
 
     signingConfigs {
