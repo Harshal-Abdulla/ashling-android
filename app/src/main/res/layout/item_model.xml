@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One model card in the library list -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -10,6 +9,7 @@
     android:layout_marginBottom="12dp"
     android:elevation="2dp">
 
+    <!-- Model name -->
     <TextView
         android:id="@+id/tvModelName"
         android:layout_width="wrap_content"
@@ -18,43 +18,103 @@
         android:textStyle="bold"
         android:textColor="#1A1A1A" />
 
+    <!-- Short description -->
     <TextView
         android:id="@+id/tvModelDescription"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:textSize="13sp"
-        android:textColor="#666666" />
+        android:textColor="#555555" />
 
-    <TextView
-        android:id="@+id/tvModelSize"
-        android:layout_width="wrap_content"
+    <!-- Storage / RAM / device tag chips -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textSize="13sp"
-        android:textColor="#444444" />
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal">
 
-    <!-- License text is clickable — opens license URL in browser -->
+        <TextView
+            android:id="@+id/tvModelSize"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="#F0F0F0"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:textSize="12sp"
+            android:textColor="#444444" />
+
+        <TextView
+            android:id="@+id/tvModelRam"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="#F0F0F0"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:textSize="12sp"
+            android:textColor="#444444" />
+
+        <TextView
+            android:id="@+id/tvDeviceTag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF" />
+
+    </LinearLayout>
+
+    <!-- License (tappable) -->
     <TextView
         android:id="@+id/tvModelLicense"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textSize="13sp"
+        android:layout_marginTop="8dp"
+        android:textSize="12sp"
         android:textColor="#1976D2"
         android:clickable="true"
         android:focusable="true" />
 
+    <!-- Downloaded / Active status -->
     <TextView
         android:id="@+id/tvModelStatus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:textSize="13sp"
-        android:textColor="#2E7D32"
         android:textStyle="bold"
         android:visibility="gone" />
 
+    <!-- Download progress (shown only while downloading) -->
+    <TextView
+        android:id="@+id/tvDownloadProgress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:textSize="13sp"
+        android:textColor="#1976D2"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/progressBarDownload"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:layout_marginTop="4dp"
+        android:max="100"
+        android:visibility="gone" />
+
+    <!-- Action buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -74,7 +134,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="How to Download" />
+            android:text="Download" />
 
     </LinearLayout>
 

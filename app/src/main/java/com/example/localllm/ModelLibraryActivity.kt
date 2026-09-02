@@ -1,23 +1,38 @@
 package com.example.localllm
 
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.EditText
+import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.localllm.databinding.ActivityModelLibraryBinding
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import java.io.File
 
 class ModelLibraryActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityModelLibraryBinding
     private lateinit var prefs: android.content.SharedPreferences
+    private lateinit var adapter: ModelAdapter
+
+    // Tracks the currently downloading model filename (only one at a time)
+    private var activeDownloadFileName: String? = null
+    private var downloadJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,8 +41,11 @@ class ModelLibraryActivity : AppCompatActivity() {
 
         prefs = getSharedPreferences("localllm_prefs", MODE_PRIVATE)
 
-        supportActionBar?.title = "Model Library"
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        binding.btnKaggleAccount.setOnClickListener {
+            showCredentialsDialog(onSaved = {
+                Toast.makeText(this, "Credentials saved!", Toast.LENGTH_SHORT).show()
+            })
+        }
 
         setupModelList()
     }
@@ -35,49 +53,155 @@ class ModelLibraryActivity : AppCompatActivity() {
     private fun setupModelList() {
         val activeModel = prefs.getString("active_model", "") ?: ""
 
-        binding.rvModels.layoutManager = LinearLayoutManager(this)
-        binding.rvModels.adapter = ModelAdapter(
+        adapter = ModelAdapter(
             models = ModelLibrary.models,
             activeFileName = activeModel,
             externalFilesDir = getExternalFilesDir(null),
-            onUseClicked = { model ->
-                // Save selected model to SharedPreferences
-                prefs.edit().putString("active_model", model.fileName).apply()
-                finish() // go back to chat screen — onResume will reload the model
-            },
-            onDownloadClicked = { model ->
-                // Open Kaggle in browser with instructions
-                showDownloadInstructions(model)
-            },
+            onUseClicked = { model -> switchToModel(model) },
+            onDownloadClicked = { model -> startDownload(model) },
             onLicenseClicked = { model ->
-                // Open license URL in browser
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(model.licenseUrl))
-                startActivity(intent)
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(model.licenseUrl)))
             }
         )
+
+        binding.rvModels.layoutManager = LinearLayoutManager(this)
+        binding.rvModels.adapter = adapter
     }
 
-    private fun showDownloadInstructions(model: ModelInfo) {
-        val adbCommand = "adb push ~/Downloads/${model.fileName} " +
-                "/sdcard/Android/data/com.example.localllm/files/${model.fileName}"
+    // ── Model switching ────────────────────────────────────────────────────────
 
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Download ${model.displayName}")
-            .setMessage(
-                "1. Go to kaggle.com/models/google/gemma\n" +
-                "2. Select 'LiteRT' tab\n" +
-                "3. Choose variation: ${model.kaggleVariation}\n" +
-                "4. Download and extract the .tar.gz file\n\n" +
-                "5. Run this command on your Mac:\n\n" +
-                adbCommand
+    private fun switchToModel(model: ModelInfo) {
+        prefs.edit().putString("active_model", model.fileName).apply()
+        Toast.makeText(this, "Switched to ${model.displayName}", Toast.LENGTH_SHORT).show()
+        // Update adapter so the active indicator moves to the new model
+        adapter.activeFileName = model.fileName
+        adapter.notifyDataSetChanged()
+        // Go back to chat — onResume in MainActivity will reload the model
+        finish()
+    }
+
+    // ── Download flow ──────────────────────────────────────────────────────────
+
+    private fun startDownload(model: ModelInfo) {
+        // If another download is already running, block
+        if (activeDownloadFileName != null) {
+            Toast.makeText(this, "A download is already in progress", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Get saved Kaggle credentials, or prompt user to enter them
+        val username = prefs.getString("kaggle_username", "") ?: ""
+        val apiKey   = prefs.getString("kaggle_api_key",  "") ?: ""
+
+        if (username.isEmpty() || apiKey.isEmpty()) {
+            showCredentialsDialog(onSaved = { startDownload(model) })
+            return
+        }
+
+        activeDownloadFileName = model.fileName
+        adapter.notifyDataSetChanged()
+
+        downloadJob = lifecycleScope.launch {
+            val result = KaggleDownloader.download(
+                context  = this@ModelLibraryActivity,
+                model    = model,
+                username = username,
+                apiKey   = apiKey,
+                onProgress = { progress ->
+                    val index = ModelLibrary.models.indexOfFirst { it.fileName == model.fileName }
+                    if (index != -1) {
+                        runOnUiThread {
+                            adapter.downloadProgress[model.fileName] = progress
+                            adapter.notifyItemChanged(index)
+                        }
+                    }
+                }
             )
-            .setPositiveButton("Open Kaggle") { _, _ ->
-                val intent = Intent(Intent.ACTION_VIEW,
-                    Uri.parse("https://www.kaggle.com/models/google/gemma/frameworks/tfLite"))
-                startActivity(intent)
+
+            // Download finished (success or failure)
+            activeDownloadFileName = null
+            adapter.downloadProgress.remove(model.fileName)
+            adapter.notifyDataSetChanged()
+
+            result.onSuccess {
+                Toast.makeText(
+                    this@ModelLibraryActivity,
+                    "${model.displayName} downloaded!",
+                    Toast.LENGTH_SHORT
+                ).show()
+                // Auto-switch to the newly downloaded model
+                switchToModel(model)
             }
-            .setNegativeButton("Close", null)
+            result.onFailure { error ->
+                AlertDialog.Builder(this@ModelLibraryActivity)
+                    .setTitle("Download failed")
+                    .setMessage(error.message ?: "Unknown error")
+                    .setPositiveButton("Retry") { _, _ -> startDownload(model) }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        }
+    }
+
+    private fun cancelDownload() {
+        downloadJob?.cancel()
+        downloadJob = null
+        activeDownloadFileName?.let { fileName ->
+            adapter.downloadProgress.remove(fileName)
+        }
+        activeDownloadFileName = null
+        adapter.notifyDataSetChanged()
+    }
+
+    // ── Kaggle credentials dialog ──────────────────────────────────────────────
+
+    private fun showCredentialsDialog(onSaved: () -> Unit) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_kaggle_credentials, null)
+        val etUsername = dialogView.findViewById<EditText>(R.id.etKaggleUsername)
+        val etApiKey   = dialogView.findViewById<EditText>(R.id.etKaggleApiKey)
+
+        // Pre-fill if already saved
+        etUsername.setText(prefs.getString("kaggle_username", ""))
+        etApiKey.setText(prefs.getString("kaggle_api_key", ""))
+
+        AlertDialog.Builder(this)
+            .setTitle("Kaggle Account")
+            .setMessage("Models are hosted on Kaggle. Enter your credentials to download directly.\n\nGet your API key at kaggle.com → Settings → API → Create New Token")
+            .setView(dialogView)
+            .setPositiveButton("Save & Download") { _, _ ->
+                val username = etUsername.text.toString().trim()
+                val apiKey   = etApiKey.text.toString().trim()
+                if (username.isEmpty() || apiKey.isEmpty()) {
+                    Toast.makeText(this, "Please fill in both fields", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                prefs.edit()
+                    .putString("kaggle_username", username)
+                    .putString("kaggle_api_key", apiKey)
+                    .apply()
+                onSaved()
+            }
+            .setNeutralButton("Open Kaggle Settings") { _, _ ->
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.kaggle.com/settings/account")))
+            }
+            .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    // Adds a "Kaggle Account" option to the top-right menu
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menu.add(0, 1, 0, "Kaggle Account")
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == 1) {
+            showCredentialsDialog(onSaved = {
+                Toast.makeText(this, "Credentials updated", Toast.LENGTH_SHORT).show()
+            })
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -85,24 +209,32 @@ class ModelLibraryActivity : AppCompatActivity() {
         return true
     }
 
-    // Adapter for the model list — same concept as ChatAdapter
-    class ModelAdapter(
+    // ── Adapter ────────────────────────────────────────────────────────────────
+
+    inner class ModelAdapter(
         private val models: List<ModelInfo>,
-        private val activeFileName: String,
+        var activeFileName: String,
         private val externalFilesDir: File?,
         private val onUseClicked: (ModelInfo) -> Unit,
         private val onDownloadClicked: (ModelInfo) -> Unit,
         private val onLicenseClicked: (ModelInfo) -> Unit
     ) : RecyclerView.Adapter<ModelAdapter.ModelViewHolder>() {
 
-        class ModelViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val tvName: TextView = view.findViewById(R.id.tvModelName)
-            val tvDescription: TextView = view.findViewById(R.id.tvModelDescription)
-            val tvSize: TextView = view.findViewById(R.id.tvModelSize)
-            val tvLicense: TextView = view.findViewById(R.id.tvModelLicense)
-            val tvStatus: TextView = view.findViewById(R.id.tvModelStatus)
-            val btnUse: Button = view.findViewById(R.id.btnUseModel)
-            val btnDownload: Button = view.findViewById(R.id.btnDownloadModel)
+        // progress value per fileName:  0–100 = download %,  -1 = extracting
+        val downloadProgress = mutableMapOf<String, Int>()
+
+        inner class ModelViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val tvName:             TextView    = view.findViewById(R.id.tvModelName)
+            val tvDescription:      TextView    = view.findViewById(R.id.tvModelDescription)
+            val tvSize:             TextView    = view.findViewById(R.id.tvModelSize)
+            val tvRam:              TextView    = view.findViewById(R.id.tvModelRam)
+            val tvDeviceTag:        TextView    = view.findViewById(R.id.tvDeviceTag)
+            val tvLicense:          TextView    = view.findViewById(R.id.tvModelLicense)
+            val tvStatus:           TextView    = view.findViewById(R.id.tvModelStatus)
+            val tvDownloadProgress: TextView    = view.findViewById(R.id.tvDownloadProgress)
+            val progressBar:        ProgressBar = view.findViewById(R.id.progressBarDownload)
+            val btnUse:             Button      = view.findViewById(R.id.btnUseModel)
+            val btnDownload:        Button      = view.findViewById(R.id.btnDownloadModel)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ModelViewHolder {
@@ -112,38 +244,86 @@ class ModelLibraryActivity : AppCompatActivity() {
         }
 
         override fun onBindViewHolder(holder: ModelViewHolder, position: Int) {
-            val model = models[position]
+            val model        = models[position]
             val isDownloaded = File(externalFilesDir, model.fileName).exists()
-            val isActive = model.fileName == activeFileName
+            val isActive     = model.fileName == activeFileName
+            val isDownloading = activeDownloadFileName == model.fileName
+            val progress     = downloadProgress[model.fileName]
 
-            holder.tvName.text = model.displayName
+            // Static info
+            holder.tvName.text        = model.displayName
             holder.tvDescription.text = model.description
-            holder.tvSize.text = "Size: ${model.sizeLabel}"
-            holder.tvLicense.text = "License: ${model.license}"
+            holder.tvSize.text        = "Storage: ${model.sizeLabel}"
+            holder.tvRam.text         = "RAM: ${model.ramLabel}"
+            holder.tvLicense.text     = "License: ${model.license}"
 
+            // Device tag colour
+            holder.tvDeviceTag.text = model.deviceTag
+            holder.tvDeviceTag.setBackgroundColor(
+                when (model.deviceTagColor) {
+                    "green"  -> Color.parseColor("#2E7D32")
+                    "orange" -> Color.parseColor("#E65100")
+                    else     -> Color.parseColor("#B71C1C")
+                }
+            )
+
+            // ── Download progress UI ──
+            if (isDownloading && progress != null) {
+                holder.tvDownloadProgress.visibility = View.VISIBLE
+                holder.progressBar.visibility        = View.VISIBLE
+
+                if (progress == -1) {
+                    holder.tvDownloadProgress.text = "Extracting model..."
+                    holder.progressBar.isIndeterminate = true
+                } else {
+                    holder.tvDownloadProgress.text = "Downloading $progress%"
+                    holder.progressBar.isIndeterminate = false
+                    holder.progressBar.progress = progress
+                }
+
+                holder.tvStatus.visibility = View.GONE
+                holder.btnUse.isEnabled    = false
+                holder.btnUse.text         = "Downloading..."
+                holder.btnDownload.text    = "Cancel"
+                holder.btnDownload.setOnClickListener { cancelDownload() }
+                return
+            } else {
+                holder.tvDownloadProgress.visibility   = View.GONE
+                holder.progressBar.visibility          = View.GONE
+                holder.progressBar.isIndeterminate     = false
+            }
+
+            // ── Normal state UI ──
             when {
                 isActive -> {
                     holder.tvStatus.text = "✓ Active"
+                    holder.tvStatus.setTextColor(Color.parseColor("#2E7D32"))
                     holder.tvStatus.visibility = View.VISIBLE
-                    holder.btnUse.isEnabled = false
-                    holder.btnUse.text = "In Use"
+                    holder.btnUse.isEnabled    = false
+                    holder.btnUse.text         = "In Use"
                 }
                 isDownloaded -> {
                     holder.tvStatus.text = "Downloaded"
+                    holder.tvStatus.setTextColor(Color.parseColor("#1976D2"))
                     holder.tvStatus.visibility = View.VISIBLE
-                    holder.btnUse.isEnabled = true
-                    holder.btnUse.text = "Use This Model"
+                    holder.btnUse.isEnabled    = true
+                    holder.btnUse.text         = "Switch to This Model"
                 }
                 else -> {
                     holder.tvStatus.visibility = View.GONE
-                    holder.btnUse.isEnabled = false
-                    holder.btnUse.text = "Not Downloaded"
+                    holder.btnUse.isEnabled    = false
+                    holder.btnUse.text         = "Not Downloaded"
                 }
             }
 
-            holder.btnUse.setOnClickListener { onUseClicked(model) }
-            holder.btnDownload.setOnClickListener { onDownloadClicked(model) }
-            holder.tvLicense.setOnClickListener { onLicenseClicked(model) }
+            // Disable download button if a different model is already downloading
+            val anotherDownloading = activeDownloadFileName != null && !isDownloading
+            holder.btnDownload.isEnabled = !anotherDownloading
+            holder.btnDownload.text = if (isDownloaded) "Re-download" else "Download"
+
+            holder.btnUse.setOnClickListener      { onUseClicked(model) }
+            holder.btnDownload.setOnClickListener  { onDownloadClicked(model) }
+            holder.tvLicense.setOnClickListener    { onLicenseClicked(model) }
         }
 
         override fun getItemCount() = models.size

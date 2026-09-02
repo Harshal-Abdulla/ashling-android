@@ -32,7 +32,7 @@ class ChatAdapter(private val messages: List<ChatMessage>) :
     // Called for each item — tells the RecyclerView which layout to use
     override fun getItemViewType(position: Int): Int {
         return if (messages[position].isUser) VIEW_TYPE_USER else VIEW_TYPE_AI
-    }
+    } 
 
     // Called when a new bubble needs to be created (inflated from XML)
     // "Inflate" = read the XML layout and turn it into actual View objects in memory
