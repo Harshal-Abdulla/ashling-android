@@ -427,7 +427,7 @@ class MainActivity : AppCompatActivity() {
     private fun addWelcomeMessage() {
         addMessage(
             ChatMessage(
-                "Hi! I'm running locally on your device — no internet needed. Ask me anything!",
+                "Hi! I'm running locally on your device, no internet needed. Ask me anything!",
                 isUser = false
             )
         )

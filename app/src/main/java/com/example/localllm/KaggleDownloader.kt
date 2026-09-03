@@ -81,7 +81,7 @@ object KaggleDownloader {
             if (finalUrl == null) {
                 val reason = when (lastCode) {
                     401 -> "Wrong Kaggle username or API key."
-                    403 -> "Access denied — make sure you accepted the model license on kaggle.com."
+                    403 -> "Access denied. Make sure you accepted the model license on kaggle.com."
                     404 -> "Model not found. The Kaggle path may have changed."
                     else -> "HTTP $lastCode"
                 }

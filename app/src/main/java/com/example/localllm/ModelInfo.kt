@@ -30,7 +30,7 @@ object ModelLibrary {
     val models = listOf(
 
         ModelInfo(
-            displayName = "SmolLM 135M — Smallest",
+            displayName = "SmolLM 135M, smallest",
             description = "Tiny model from Hugging Face. Downloads in a minute and runs on anything, but at 135M parameters the answers are rough. Good for checking the app works; get Qwen for real use.",
             fileName = "smollm-135m-q8.task",
             sizeLabel = "~160 MB",
@@ -62,7 +62,7 @@ object ModelLibrary {
             promptFormat = PromptFormat.ZEPHYR),
 
         ModelInfo(
-            displayName = "Qwen 2.5 1.5B — Recommended",
+            displayName = "Qwen 2.5 1.5B, recommended",
             description = "Alibaba's small model, and the best balance here. Answers real questions properly rather than the rambling the tiny ones produce. Start with this if your phone can take it.",
             fileName = "qwen2.5-1.5b-q8.task",
             sizeLabel = "~1.5 GB",
@@ -79,7 +79,7 @@ object ModelLibrary {
 
         ModelInfo(
             displayName = "DeepSeek R1 1.5B",
-            description = "Reasoning model — it works through the problem before answering, so replies are slower but better on maths. No account needed.",
+            description = "Reasoning model. It works through the problem before answering, so replies are slower but better on maths. No account needed.",
             fileName = "deepseek-r1-1.5b-q8.task",
             sizeLabel = "~1.8 GB",
             ramLabel = "4 GB RAM",
@@ -94,8 +94,8 @@ object ModelLibrary {
             promptFormat = PromptFormat.CHATML),
 
         ModelInfo(
-            displayName = "Phi-4 Mini — Best quality",
-            description = "Microsoft's 3.8B model and the best one here by a distance. Only worth it on a recent flagship — anything less and it will either refuse to load or crawl.",
+            displayName = "Phi-4 Mini, best quality",
+            description = "Microsoft's 3.8B model and the best one here by a distance. Only worth it on a recent flagship. Anything less and it will either refuse to load or crawl.",
             fileName = "phi-4-mini-q8.task",
             sizeLabel = "~3.8 GB",
             ramLabel = "8 GB RAM",
@@ -110,7 +110,7 @@ object ModelLibrary {
             promptFormat = PromptFormat.PHI),
 
         ModelInfo(
-            displayName = "Gemma 2 2B — Recommended",
+            displayName = "Gemma 2 2B, recommended",
             description = "Google's latest 2B model. Much smarter than Gemma 1.1. Best balance of speed and quality.",
             fileName = "gemma-2-2b-it-cpu-int4.bin",
             sizeLabel = "~1.3 GB",
@@ -124,7 +124,7 @@ object ModelLibrary {
         ),
 
         ModelInfo(
-            displayName = "Gemma 2 2B — High Quality",
+            displayName = "Gemma 2 2B, high quality",
             description = "Higher precision version of Gemma 2. Smarter answers, needs more storage and RAM.",
             fileName = "gemma-2-2b-it-cpu-int8.bin",
             sizeLabel = "~2.6 GB",
@@ -153,7 +153,7 @@ object ModelLibrary {
 
         ModelInfo(
             displayName = "Gemma 2B (Original)",
-            description = "The first Gemma 2B release. Gemma 2 2B is better in every way — only use this if you already have it.",
+            description = "The first Gemma 2B release. Gemma 2 2B is better in every way, so only use this if you already have it.",
             fileName = "gemma-2b-it-cpu-int4.bin",
             sizeLabel = "~1.4 GB",
             ramLabel = "3 GB RAM",
