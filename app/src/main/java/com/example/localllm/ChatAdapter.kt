@@ -7,9 +7,9 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 // RecyclerView.Adapter = the "engine" that powers the scrolling chat list.
-// Think of it like a Python generator that produces views on demand —
-// it only creates as many chat bubbles as fit on screen, then REUSES them
-// as you scroll (that's the "Recycler" part — efficient on memory).
+// Think of it like a Python generator that produces views on demand.
+// It only creates as many chat bubbles as fit on screen, then REUSES them
+// as you scroll (that's the "Recycler" part, efficient on memory).
 //
 // Our adapter handles TWO types of bubbles:
 //   VIEW_TYPE_USER = blue bubble on the right
@@ -23,13 +23,13 @@ class ChatAdapter(private val messages: List<ChatMessage>) :
     }
 
     // ViewHolder = a small object that holds references to the views in ONE chat bubble.
-    // Without this, Android would call findViewById() on every scroll — very slow.
+    // Without this, Android would call findViewById() on every scroll, which is very slow.
     // With it, we find views once and cache them here.
     class MessageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvMessage: TextView = view.findViewById(R.id.tvMessage)
     }
 
-    // Called for each item — tells the RecyclerView which layout to use
+    // Called for each item, tells the RecyclerView which layout to use
     override fun getItemViewType(position: Int): Int {
         return if (messages[position].isUser) VIEW_TYPE_USER else VIEW_TYPE_AI
     } 
@@ -46,7 +46,7 @@ class ChatAdapter(private val messages: List<ChatMessage>) :
         return MessageViewHolder(view)
     }
 
-    // Called when a bubble is being shown — fill it with the actual message text
+    // Called when a bubble is being shown, so fill it with the actual message text
     // This is like binding data to a template in Python's Jinja2
     override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
         val message = messages[position]
@@ -55,6 +55,6 @@ class ChatAdapter(private val messages: List<ChatMessage>) :
             if (message.isUser) message.text else ReplyFormatter.clean(message.text)
     }
 
-    // Total number of messages — like len(messages) in Python
+    // Total number of messages, like len(messages) in Python
     override fun getItemCount() = messages.size
 }

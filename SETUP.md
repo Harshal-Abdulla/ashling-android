@@ -1,124 +1,74 @@
-# Local AI Chat — Setup Guide
+# Ashling: setup guide
 
-This guide walks you through everything, step by step.
+Most people do not need this file. If you just want the app, download the APK
+from the [Releases page](https://github.com/Harshal-Abdulla/ashling-android/releases)
+and skip to "Getting a model" in the [README](README.md).
 
----
+This guide is for building it from source in Android Studio.
 
-## What we're building
-A native Android chat app that runs Google's **Gemma 2B** AI model entirely on your phone.
-No internet needed after setup. No server. Just your phone and the model.
+## 1. Install Android Studio
 
----
+Download it from [developer.android.com/studio](https://developer.android.com/studio)
+and accept the defaults. Say yes when it offers to install an emulator, which is
+useful if you do not want to plug a phone in. The install takes a while.
 
-## Step 1 — Install Android Studio
+You need JDK 21. Android Studio ships with a suitable one, so this usually
+sorts itself out.
 
-1. Go to: https://developer.android.com/studio
-2. Download and install (click Next/Agree on everything)
-3. When it asks about installing an Android Virtual Device (emulator), say **Yes**
-4. Let it finish — this takes a while (~10 minutes)
+## 2. Open the project
 
----
+In Android Studio, choose **Open** rather than New Project, and point it at this
+folder. It will download Gradle on first open, which takes a few minutes.
 
-## Step 2 — Open this project in Android Studio
+Red errors during that first sync are normal. Wait for the progress bar at the
+bottom to finish before worrying about them.
 
-1. Open Android Studio
-2. Click **"Open"** (not "New Project")
-3. Navigate to this folder: `Desktop/ollama in android`
-4. Click **OK**
-5. Android Studio will ask to download Gradle — click **OK** and wait
+If the project lives in a folder that iCloud Drive syncs, such as Desktop or
+Documents, move it somewhere like `~/Projects` first. iCloud creates
+"file 2.xml" duplicates inside `app/build` and the dex step then fails on them.
 
-> If it shows errors in red, wait for Gradle sync to finish (bottom progress bar).
-> Usually fixes itself after the first sync.
+## 3. Run it
 
----
+On an emulator, pick one from the device dropdown and press Run.
 
-## Step 3 — Download the AI model
+On your own phone:
 
-The app uses Google's **Gemma 2B IT** model in a special compressed format (~1.4 GB).
+1. Open **Settings**, go to **About Phone**, tap **Build Number** seven times
+2. Go back, find **Developer Options**, turn on **USB Debugging**
+3. Plug the phone in and accept the prompt asking you to trust the computer
+4. Pick the phone in the device dropdown and press Run
 
-1. Go to: https://www.kaggle.com/models/google/gemma/frameworks/tfLite
-2. Create a free Kaggle account if you don't have one
-3. Find: **Gemma 2B IT CPU int4** → Download the `.bin` file
-4. The file is named something like `gemma-2b-it-cpu-int4.bin`
-
----
-
-## Step 4 — Enable Developer Mode on your Android phone
-
-1. Open **Settings** on your phone
-2. Go to **About Phone** → tap **Build Number** 7 times
-3. You'll see "You are now a developer!"
-4. Go back to Settings → **Developer Options** → enable **USB Debugging**
-
----
-
-## Step 5 — Connect your phone and install the app
-
-1. Connect your phone to your Mac with a USB cable
-2. On your phone, tap **"Allow"** when it asks about USB debugging
-3. In Android Studio, click the **▶ Run** button (green play button at the top)
-4. Select your phone from the list
-5. The app will install and open
-
----
-
-## Step 6 — Push the model to your phone
-
-The model is too big to bundle inside the app (1.4 GB!), so we copy it directly.
-
-Open **Terminal** on your Mac and run:
-
-```bash
-# Replace the path with wherever you downloaded the model
-adb push ~/Downloads/gemma-2b-it-cpu-int4.bin /data/data/com.example.localllm/files/gemma-2b-it-cpu-int4.bin
-```
-
-> `adb` (Android Debug Bridge) is a tool that comes with Android Studio.
-> If `adb` isn't found, add it to your PATH:
-> ```bash
-> export PATH=$PATH:~/Library/Android/sdk/platform-tools
-> ```
-
----
-
-## Step 7 — Open the app and chat!
-
-1. Open the app on your phone
-2. Wait ~15 seconds while it loads the model into RAM
-3. The Send button will become enabled when it's ready
-4. Type a message and hit Send!
-
----
-
-## Troubleshooting
-
-**"Model file not found"** — Run the `adb push` command from Step 6.
-
-**Build errors in Android Studio** — Try **File → Sync Project with Gradle Files**.
-
-**"adb: command not found"** — See Step 6 for the PATH fix.
-
-**App crashes on launch** — Your phone may not have enough free RAM. Close all other apps and try again.
-
-**Very slow responses** — Normal for the first message. Subsequent messages are faster.
-The Gemma 2B model generates about 5-15 tokens/second on a mid-range phone.
-
----
-
-## File structure reference
+From the command line instead of the IDE:
 
 ```
-app/src/main/
-├── java/com/example/localllm/
-│   ├── MainActivity.kt     ← App logic + AI engine
-│   ├── ChatAdapter.kt      ← Manages the scrolling message list
-│   └── ChatMessage.kt      ← Simple data container (text + isUser flag)
-└── res/
-    ├── layout/
-    │   ├── activity_main.xml       ← Main screen layout
-    │   ├── item_user_message.xml   ← Blue (user) bubble
-    │   └── item_ai_message.xml     ← Gray (AI) bubble
-    └── drawable/
-        ├── bg_user_bubble.xml      ← Rounded rect shape (blue)
-        └── bg_ai_bubble.xml        ← Rounded rect shape (gray)
+./gradlew assembleDebug
 ```
+
+The APK lands in `app/build/outputs/apk/debug/`.
+
+## 4. Get a model
+
+The app ships without one, because model files are over a gigabyte.
+
+Open the app, go to **Switch Model**, and pick one. It downloads inside the app.
+Qwen 2.5 1.5B is the one to choose. There is no need to download anything
+manually or push files over adb.
+
+Five of the models need no account. The Gemma ones are behind Kaggle and need a
+free account and an API token, which the README explains.
+
+## If something goes wrong
+
+**Build fails after you moved or renamed the project.** Run
+`./gradlew clean`, then build again.
+
+**Gradle or JDK complaints.** This needs JDK 21 and Gradle 8.13. JDK 25 and
+Gradle 9 both fail. The wrapper pins the Gradle version, so the JDK is the one
+to check.
+
+**The app crashes when a model loads.** The phone probably does not have enough
+free RAM for that model. Close everything else, or pick a smaller one. SmolLM
+135M runs on anything.
+
+**First reply is very slow.** That is normal. The model is being loaded into
+memory. Later messages in the same session are faster.

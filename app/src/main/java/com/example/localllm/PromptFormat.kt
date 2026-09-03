@@ -5,8 +5,8 @@ package com.example.localllm
  *
  * Every model family was fine-tuned with its own chat template, and they are
  * not interchangeable. Sending Gemma's <start_of_turn> to a Qwen model means it
- * never sees a structure it recognises, so it does not answer the question —
- * it just carries on writing text, which is where the echoed prompts and the
+ * never sees a structure it recognises, so it does not answer the question.
+ * It just carries on writing text, which is where the echoed prompts and the
  * invented follow-up questions were coming from.
  *
  * Getting this right matters far more than any amount of tidying up the reply

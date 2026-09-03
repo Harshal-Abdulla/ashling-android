@@ -20,7 +20,7 @@ object ReplyFormatter {
      *
      * The prompt is written in Gemma's format, so a model trained on a
      * different chat template does not recognise the stop token and just keeps
-     * going — it writes its own answer, then invents the next question and
+     * going. It writes its own answer, then invents the next question and
      * answers that too. Cutting at the first of these keeps the reply to the
      * bit that was actually meant for you.
      */
@@ -40,7 +40,7 @@ object ReplyFormatter {
      * ones like </|user|> that these models sometimes emit.
      *
      * Listing them individually was not enough. Every model family uses its own
-     * names — im_start, user, assistant, system — and a new model brings new
+     * names (im_start, user, assistant, system) and a new model brings new
      * ones. Matching the shape catches them all.
      */
     private val SPECIAL_TOKEN = Regex("""</?\|[a-zA-Z0-9_]+\|>""")
@@ -66,8 +66,8 @@ object ReplyFormatter {
 
         // Stop at whichever end-of-turn marker shows up first.
         //
-        // If that would throw the whole reply away — which happens when the
-        // model opens with a marker instead of ending with one — keep the text
+        // If that would throw the whole reply away, which happens when the
+        // model opens with a marker instead of ending with one, keep the text
         // and just delete the markers. An awkward answer is still better than
         // an empty bubble.
         val markerCuts = STOP_MARKERS.mapNotNull { marker ->
@@ -84,7 +84,7 @@ object ReplyFormatter {
             )
         }
 
-        // Reasoning models think out loud first. Drop it — including the case
+        // Reasoning models think out loud first. Drop it, including the case
         // where the reply is cut off mid-thought and the tag never closes.
         text = text.replace(Regex("(?s)<think>.*?</think>"), "")
         text = text.replace(Regex("(?s)<think>.*"), "")

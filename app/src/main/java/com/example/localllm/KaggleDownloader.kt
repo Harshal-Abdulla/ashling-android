@@ -24,7 +24,7 @@ import java.util.zip.ZipInputStream
 
 object KaggleDownloader {
 
-    // Called from a coroutine — downloads and extracts the model, reporting progress along the way.
+    // Called from a coroutine, downloads and extracts the model, reporting progress along the way.
     // onProgress:  0–100 = download percentage,  -1 = "extracting now"
     suspend fun download(
         context: Context,
@@ -52,7 +52,7 @@ object KaggleDownloader {
             val credentials = Base64.getEncoder()
                 .encodeToString("$username:$apiKey".toByteArray())
 
-            // Try multiple URL formats — Kaggle's API path can vary by framework casing/version
+            // Try multiple URL formats, Kaggle's API path can vary by framework casing/version
             val base = "https://www.kaggle.com/api/v1/models"
             val path = model.kaggleApiPath
             val pathNoVersion = path.substringBeforeLast("/")
@@ -89,7 +89,7 @@ object KaggleDownloader {
             }
 
             val connection = URL(finalUrl).openConnection() as HttpURLConnection
-            // GCS signed URL doesn't need auth, but add it anyway — it's ignored safely
+            // GCS signed URL doesn't need auth, but add it anyway, it's ignored safely
             connection.setRequestProperty("Authorization", "Basic $credentials")
             connection.connectTimeout = 15_000
             connection.readTimeout    = 60_000
@@ -101,7 +101,7 @@ object KaggleDownloader {
 
             val totalBytes = connection.contentLengthLong
 
-            // Stream straight to disk — never load 1.3 GB into memory
+            // Stream straight to disk, never load 1.3 GB into memory
             connection.inputStream.buffered(64 * 1024).use { input ->
                 FileOutputStream(tempFile).use { output ->
                     val buffer = ByteArray(64 * 1024)

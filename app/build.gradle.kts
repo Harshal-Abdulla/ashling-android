@@ -1,7 +1,7 @@
 import java.io.FileInputStream
 import java.util.Properties
 
-// This is the app-level build file — it lists all the libraries we use.
+// This is the app-level build file. It lists all the libraries we use.
 // Think of it like a Python requirements.txt, but with more config options.
 plugins {
     id("com.android.application")
@@ -23,7 +23,7 @@ android {
 
     defaultConfig {
         applicationId = "com.harshalabdulla.ashling"
-        minSdk = 26         // Android 8.0 — covers almost all modern phones
+        minSdk = 26         // Android 8.0, covers almost all modern phones
         targetSdk = 35
         // MediaPipe ships native libraries for three architectures, which came
         // to 104MB of the APK. Every Android phone made since about 2015 is
@@ -87,10 +87,10 @@ dependencies {
     implementation("androidx.drawerlayout:drawerlayout:1.2.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
 
-    // This is the key library — Google's on-device AI inference engine.
+    // This is the key library, Google's on-device AI inference engine.
     // 0.10.35 rather than 0.10.22. The older one only had Backend.DEFAULT, and
     // Qwen failed to load on it with "Model signature not supported for this
-    // (legacy CPU) path" — that model needs the newer LiteRT path, which only
+    // (legacy CPU) path", so that model needs the newer LiteRT path, which only
     // exists here. Matches the version the iOS build uses.
     implementation("com.google.mediapipe:tasks-genai:0.10.35")
 

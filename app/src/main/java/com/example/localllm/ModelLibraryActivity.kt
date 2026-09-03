@@ -47,7 +47,7 @@ class ModelLibraryActivity : AppCompatActivity() {
 
         // Same inset handling as the chat screen. Without it this top bar sits
         // underneath the status bar, which not only looks wrong but eats the
-        // taps — the Back button was drawn but not reachable.
+        // taps, so the Back button was drawn but not reachable.
         ViewCompat.setOnApplyWindowInsetsListener(binding.topBar) { view, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.updatePadding(top = bars.top)
@@ -99,14 +99,14 @@ class ModelLibraryActivity : AppCompatActivity() {
         // Update adapter so the active indicator moves to the new model
         adapter.activeFileName = model.fileName
         adapter.notifyDataSetChanged()
-        // Go back to chat — onResume in MainActivity will reload the model
+        // Go back to chat, onResume in MainActivity will reload the model
         finish()
     }
 
     // ── Download flow ──────────────────────────────────────────────────────────
 
     private fun startDownload(model: ModelInfo) {
-        // Already downloading this one — nothing to do. Other models can
+        // Already downloading this one, nothing to do. Other models can
         // still be started while this runs.
         if (downloadJobs.containsKey(model.fileName)) return
 

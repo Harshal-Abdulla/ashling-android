@@ -43,7 +43,7 @@ class MainActivity : AppCompatActivity() {
 
     // activeModel = whichever model the user last selected in ModelLibraryActivity
     // SharedPreferences = tiny key-value store that survives app restarts
-    // Think of it like a tiny dictionary saved to disk — like Python's shelve module
+    // Think of it like a tiny dictionary saved to disk, like Python's shelve module
     private var activeModelFile: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
      * Keeps the top bar under the status bar and the input row above the
      * keyboard.
      *
-     * Phones differ a lot here — notches, punch holes, gesture bars, and on
+     * Phones differ a lot here: notches, punch holes, gesture bars, and on
      * some phones a bottom bar that is there and on others one that isn't.
      * Hard-coded padding that looks right on one device is wrong on the next,
      * so the system tells us the sizes and we use those.
@@ -191,7 +191,7 @@ class MainActivity : AppCompatActivity() {
             .setTitle("⚠️ ${getString(R.string.accuracy_warning_title)}")
             .setMessage(getString(R.string.accuracy_warning_message))
             .setPositiveButton("I understand") { dialog, _ ->
-                // Save that we've shown the warning — never show again
+                // Save that we've shown the warning, never show again
                 prefs.edit().putBoolean("warning_shown", true).apply()
                 dialog.dismiss()
             }
@@ -227,7 +227,7 @@ class MainActivity : AppCompatActivity() {
                 .show()
         }
 
-        // Model library button — opens the model picker screen
+        // Model library button, opens the model picker screen
         binding.btnModels.setOnClickListener {
             startActivity(Intent(this, ModelLibraryActivity::class.java))
         }
@@ -325,7 +325,7 @@ class MainActivity : AppCompatActivity() {
                 // models. The engine stayed busy, the send button stayed
                 // disabled, and the next message came back with "Previous
                 // invocation still processing". A timer to work around it only
-                // moved the problem — it re-enabled the button while the engine
+                // moved the problem, because it re-enabled the button while the engine
                 // was still locked.
                 //
                 // This call returns when the answer is finished, so there is no
@@ -388,7 +388,7 @@ class MainActivity : AppCompatActivity() {
      *
      * This used to always write Gemma's format. Every other model then failed
      * to recognise the structure and simply continued the text instead of
-     * answering — echoing the instruction back, inventing its own follow-up
+     * answering: echoing the instruction back, inventing its own follow-up
      * questions, and rambling. That was the cause of the gibberish, not the
      * formatting of the reply afterwards.
      */
@@ -413,7 +413,7 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * Scrolls to the newest message, but only when you were already at the
-     * bottom — otherwise reading back through a long answer is impossible,
+     * bottom, because otherwise reading back through a long answer is impossible,
      * because the list yanks you to the end again.
      */
     private fun keepAtBottomIfAlreadyThere() {

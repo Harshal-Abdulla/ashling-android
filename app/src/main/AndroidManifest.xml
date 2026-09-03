@@ -35,7 +35,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Model library screen — opened when user taps "Models" button -->
+        <!-- Model library screen, opened when user taps "Models" button -->
         <activity
             android:name=".ModelLibraryActivity"
             android:exported="false" />
